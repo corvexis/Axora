@@ -1,16 +1,31 @@
 package frb.axeron.manager.ui.screen.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.FormatColorFill
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import frb.axeron.manager.R
@@ -28,7 +43,9 @@ fun AppearanceSettings(
     onDynamicColorChange: (Boolean) -> Unit,
     currentLanguageDisplay: String?,
     onLanguageClick: () -> Unit,
-    onPaletteClick: () -> Unit
+    onPaletteClick: () -> Unit,
+    onPresetSelected: (String) -> Unit,
+    currentColorHex: String
 ) {
     val categoryTitle = stringResource(R.string.settings_category_appearance)
     val matchCategory = shouldShow(searchText, categoryTitle)
@@ -139,7 +156,59 @@ fun AppearanceSettings(
                         .clickable(enabled = true, onClick = onPaletteClick)
                         .padding(horizontal = 8.dp)
                 )
+
+                Spacer(Modifier.width(8.dp))
+
+                Text(
+                    text = stringResource(R.string.color_presets),
+                    style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
+                ) {
+                    ColorPresetItem("#00E5FF", R.string.preset_electric_cyan, currentColorHex, onPresetSelected)
+                    ColorPresetItem("#FFB487", R.string.preset_original_orange, currentColorHex, onPresetSelected)
+                    ColorPresetItem("#39FF14", R.string.preset_neon_green, currentColorHex, onPresetSelected)
+                }
+
             }
         }
+    }
+}
+
+@Composable
+fun ColorPresetItem(
+    hexColor: String,
+    labelRes: Int,
+    currentColorHex: String,
+    onPresetSelected: (String) -> Unit
+) {
+    val color = androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hexColor))
+    val isSelected = currentColorHex.equals(hexColor, ignoreCase = true)
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onPresetSelected(hexColor) }
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(color)
+                .border(
+                    width = if (isSelected) 3.dp else 1.dp,
+                    color = if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.primary else androidx.compose.material3.MaterialTheme.colorScheme.outline,
+                    shape = CircleShape
+                )
+        )
+        Spacer(Modifier.size(4.dp))
+        Text(
+            text = stringResource(labelRes),
+            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+            maxLines = 1
+        )
     }
 }

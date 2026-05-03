@@ -89,7 +89,7 @@ import frb.axeron.server.PluginInstaller
 class AxActivity : ComponentActivity() {
 
     companion object {
-        const val OPEN_QUICK_SHELL = "FolkPure.QUICK_SHELL"
+        const val OPEN_QUICK_SHELL = "Axora.QUICK_SHELL"
     }
 
     override fun attachBaseContext(newBase: Context) {
@@ -264,6 +264,7 @@ class AxActivity : ComponentActivity() {
                     navController,
                     navigator,
                     activateViewModel.axeronInfo,
+                    activateViewModel.isShizukuActive,
                     pluginViewModel.pluginUpdateCount
                 )
             }
@@ -350,6 +351,7 @@ class AxActivity : ComponentActivity() {
         navController: NavHostController,
         navigator: DestinationsNavigator,
         axeronServerInfo: AxeronInfo,
+        isShizukuActive: Boolean,
         moduleUpdateCount: Int
     ) {
         Card(
@@ -366,6 +368,7 @@ class AxActivity : ComponentActivity() {
                 BottomBarDestination.entries
                     .forEach { destination ->
                         if (!axeronServerInfo.isRunning() && destination.needAxeron) return@forEach
+                        if (destination == BottomBarDestination.Privilege && !isShizukuActive) return@forEach
 
                         val isCurrentDestOnBackStack by navController.isRouteOnBackStackAsState(
                             destination.direction

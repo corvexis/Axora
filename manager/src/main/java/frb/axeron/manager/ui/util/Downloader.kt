@@ -105,7 +105,7 @@ suspend fun checkNewVersion(): Boolean {
 
 fun openUpdateUrl(context: Context) {
     try {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/matsuzaka-yuki/FolkPure/releases"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Sophctl/Axora/releases"))
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     } catch (e: Exception) {

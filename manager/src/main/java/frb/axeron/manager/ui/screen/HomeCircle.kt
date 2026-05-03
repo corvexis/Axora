@@ -27,6 +27,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ActivateScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.QuickShellScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.PrivilegeScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.ModeLabelText
@@ -88,23 +89,11 @@ fun HomeCircleScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column {
-                            Text(
-                                modifier = Modifier.padding(start = 10.dp),
-                                text = stringResource(R.string.app_name),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                modifier = Modifier.padding(start = 10.dp),
-                                text = "v${frb.axeron.manager.BuildConfig.VERSION_NAME} (${frb.axeron.manager.BuildConfig.VERSION_CODE})",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 },
                 actions = {
                     val loadingDialog = rememberLoadingDialog()
@@ -199,7 +188,8 @@ fun HomeCircleScreen(
                     PrivilegeCountCard(
                         Modifier.weight(1f),
                         privilegeViewModel,
-                        navigator
+                        navigator,
+                        activateViewModel.isShizukuActive
                     )
                 }
             }
@@ -371,23 +361,38 @@ fun PluginCountCard(
 fun PrivilegeCountCard(
     modifier: Modifier,
     privilegeViewModel: PrivilegeViewModel,
-    navigator: DestinationsNavigator
+    navigator: DestinationsNavigator,
+    isShizukuActive: Boolean = false
 ) {
     val count = privilegeViewModel.privilegedCount
+    val cardColor = if (isShizukuActive) {
+        MaterialTheme.colorScheme.surfaceVariant
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    }
 
-    TonalCard(modifier = modifier) {
+    TonalCard(
+        modifier = modifier,
+        containerColor = cardColor
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    navigator.navigate(BottomBarDestination.Privilege.direction) {
-                        popUpTo(NavGraphs.root) {
-                            saveState = true
+                .then(
+                    if (isShizukuActive) {
+                        Modifier.clickable {
+                            navigator.navigate(PrivilegeScreenDestination) {
+                                popUpTo(NavGraphs.root) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
-                        launchSingleTop = true
-                        restoreState = true
+                    } else {
+                        Modifier
                     }
-                }
+                )
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -395,7 +400,11 @@ fun PrivilegeCountCard(
                 imageVector = Icons.Outlined.Security,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (isShizukuActive) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                }
             )
             Spacer(Modifier.width(16.dp))
             Column {
@@ -407,13 +416,22 @@ fun PrivilegeCountCard(
                     },
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = if (isShizukuActive) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    }
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = count.toString(),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline
+                    color = if (isShizukuActive) {
+                        MaterialTheme.colorScheme.outline
+                    } else {
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                    }
                 )
             }
         }
@@ -464,34 +482,6 @@ fun InfoCardCircle(activateViewModel: ActivateViewModel) {
                 }
             )
 
-            InfoCardItem(
-                icon = Icons.Outlined.Apps,
-                label = stringResource(R.string.app_name),
-                content = "v${frb.axeron.manager.BuildConfig.VERSION_NAME}"
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            InfoCardItem(
-                icon = Icons.Outlined.PhoneAndroid,
-                label = stringResource(R.string.home_device_info),
-                content = SystemUtils.getDeviceInfo()
-            )
-
-            Spacer(Modifier.height(16.dp))
-            InfoCardItem(
-                icon = Icons.Outlined.DeveloperBoard,
-                label = stringResource(R.string.home_kernel),
-                content = SystemUtils.getKernelVersion()
-            )
-
-            Spacer(Modifier.height(16.dp))
-            InfoCardItem(
-                icon = Icons.Outlined.Info,
-                label = stringResource(R.string.home_system_version),
-                content = SystemUtils.getSystemVersion()
-            )
-
             Spacer(Modifier.height(16.dp))
             InfoCardItem(
                 icon = Icons.Outlined.Android,
@@ -525,7 +515,7 @@ fun LearnMoreCardCircle() {
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    uriHandler.openUri("https://github.com/matsuzaka-yuki/FolkPure")
+                    uriHandler.openUri("https://fahrez182.github.io/AxManager")
                 }
                 .padding(24.dp),
             verticalAlignment = Alignment.CenterVertically

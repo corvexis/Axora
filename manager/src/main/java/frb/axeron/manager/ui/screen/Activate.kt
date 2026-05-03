@@ -212,7 +212,7 @@ fun TcpDebuggingCard(
                             Toast.makeText(context, ai.message, Toast.LENGTH_SHORT).show()
                         }
 
-                        Log.e("FolkPureStartAdb", ai.message, ai.cause)
+                        Log.e("AxoraStartAdb", ai.message, ai.cause)
                         activateViewModel.setTryToActivate(false)
                     }
                 }
@@ -246,11 +246,12 @@ fun TcpDebuggingCard(
                             Toast.makeText(context, ai.message, Toast.LENGTH_SHORT).show()
                         }
 
-                        Log.e("FolkPureStartAdb", ai.message, ai.cause)
+                        Log.e("AxoraStartAdb", ai.message, ai.cause)
                         activateViewModel.setTryToActivate(false)
                     }
                 }
             ) {
+
                 Icon(
                     imageVector = Icons.Filled.Stop,
                     modifier = Modifier
@@ -364,7 +365,7 @@ fun WirelessDebuggingCard(
                             }
                         launcherDeveloper.launch(intent)
                     }
-                    Log.d("FolkPure", "launchDevSettings")
+                    Log.d("Axora", "launchDevSettings")
                     activateViewModel.setLaunchDevSettings(false)
                 }
             }
@@ -383,7 +384,7 @@ fun WirelessDebuggingCard(
                                 Toast.makeText(context, ai.message, Toast.LENGTH_SHORT).show()
                             }
 
-                            Log.e("FolkPureStartAdb", ai.message, ai.cause)
+                            Log.e("AxoraStartAdb", ai.message, ai.cause)
                             activateViewModel.setTryToActivate(false)
                             if (ai is AdbStateInfo.Failed) {
                                 activateViewModel.startPairingService(context)

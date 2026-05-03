@@ -28,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Security
@@ -152,25 +153,11 @@ fun HomeScreenOriginal(navigator: DestinationsNavigator, viewModelGlobal: ViewMo
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                modifier = Modifier.padding(start = 10.dp),
-                                text = stringResource(R.string.app_name),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                modifier = Modifier.padding(start = 10.dp),
-                                text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 },
                 actions = {
                     val loadingDialog = rememberLoadingDialog()
@@ -280,7 +267,7 @@ fun HomeScreenOriginal(navigator: DestinationsNavigator, viewModelGlobal: ViewMo
 @Composable
 fun SupportCard() {
     val uriHandler = LocalUriHandler.current
-    val githubFahrez182 = "https://github.com/matsuzaka-yuki/FolkPure"
+    val githubFahrez182 = "https://fahrez182.github.io/AxManager"
 
     ElevatedCard(
         onClick = {
@@ -319,7 +306,7 @@ fun SupportCard() {
 @Composable
 fun LearnCard() {
     val uriHandler = LocalUriHandler.current
-    val learnAxManager = "https://github.com/matsuzaka-yuki/FolkPure"
+    val learnAxManager = "https://fahrez182.github.io/AxManager"
 
     ElevatedCard(
         onClick = {
@@ -709,6 +696,12 @@ fun InfoCard(activateViewModel: ActivateViewModel) {
             )
 
             InfoCardItem(
+                label = stringResource(R.string.axora_version),
+                content = BuildConfig.VERSION_NAME,
+                icon = Icons.Filled.Info,
+            )
+
+            InfoCardItem(
                 label = stringResource(R.string.abi_supported),
                 content = Build.SUPPORTED_ABIS.joinToString(", "),
                 icon = Icons.Filled.Memory,
@@ -729,7 +722,7 @@ fun InfoCard(activateViewModel: ActivateViewModel) {
 fun IssueReportCard() {
     val uriHandler = LocalUriHandler.current
     val githubIssueUrl = "https://github.com/fahrez182/AxManager/issues"
-    val telegramUrl = "https://t.me/axeron_manager"
+    val telegramUrl = "https://t.me/sys_soph"
 
     ElevatedCard {
         Row(

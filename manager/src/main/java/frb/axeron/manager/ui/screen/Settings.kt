@@ -61,6 +61,7 @@ import androidx.lifecycle.compose.rememberLifecycleOwner
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import frb.axeron.manager.BuildConfig
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.PaletteDialog
 import frb.axeron.manager.ui.component.SearchAppBar
@@ -179,7 +180,11 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                 },
                 onPaletteClick = {
                     showColorPicker = true
-                }
+                },
+                onPresetSelected = { hex ->
+                    settings.setCustomPrimaryColor(hex)
+                },
+                currentColorHex = settings.customPrimaryColorHex
             )
 
             ActivationSettings(
@@ -235,9 +240,9 @@ fun DeveloperInfo(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val githubUrl = "https://github.com/matsuzaka-yuki/FolkPure"
-    val telegramUrl = "https://t.me/FolkPure"
-    val sociabuzzUrl = "https://afdian.com/a/matsuzaka_yuki"
+    val githubUrl = "https://github.com/Sophctl"
+    val telegramUrl = "https://t.me/sys_soph"
+                val sociabuzzUrl = "https://sociabuzz.com/sophctl/tribe"
 
     if (showDialog) {
         ModalBottomSheet(
@@ -262,7 +267,7 @@ fun DeveloperInfo(
                     ) {
                     AsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data("http://q.qlogo.cn/headimg_dl?dst_uin=3231515355&spec=640&img_type=jpg")
+                            .data("https://cdn.corenexis.com/files/c/5478177720.jpg")
                             .crossfade(true)
                             .build(),
                         contentDescription = "Developer Profile Picture",
@@ -277,7 +282,7 @@ fun DeveloperInfo(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Matsuzaka Yuki",
+                    text = "Soph.ctl",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -290,7 +295,7 @@ fun DeveloperInfo(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "\"明るい未来へと飛翔する\"",
+                    text = stringResource(R.string.axora_version_label, BuildConfig.VERSION_NAME),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),

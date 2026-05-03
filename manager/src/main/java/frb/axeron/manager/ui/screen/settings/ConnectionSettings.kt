@@ -164,7 +164,7 @@ private fun TcpPortItem(
                     ) {
                         Icon(
                             imageVector = Icons.Default.RestartAlt,
-                            contentDescription = "Re-Activate FolkPure"
+                            contentDescription = "Re-Activate Axora"
                         )
                     }
                 }

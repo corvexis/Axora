@@ -104,7 +104,7 @@ class ActivateViewModel : ViewModel() {
 
     fun axeronObserve(): Flow<ActivateStatus> = callbackFlow {
         if (Axeron.pingBinder()) {
-            Log.i("FolkPureBinder", "binderHasReceived")
+            Log.i("AxoraBinder", "binderHasReceived")
             val axeronInfo = Axeron.getAxeronInfo()
             when {
                 axeronInfo.isNeedUpdate() -> {
@@ -131,7 +131,7 @@ class ActivateViewModel : ViewModel() {
             }
         }
         val receivedListener = Axeron.OnBinderReceivedListener {
-            Log.i("FolkPureBinder", "onBinderReceived")
+            Log.i("AxoraBinder", "onBinderReceived")
             val axeronInfo = Axeron.getAxeronInfo()
             when {
                 axeronInfo.isRunning() -> {
@@ -144,7 +144,7 @@ class ActivateViewModel : ViewModel() {
             }
         }
         val deadListener = Axeron.OnBinderDeadListener {
-            Log.i("FolkPureBinder", "onBinderDead")
+            Log.i("AxoraBinder", "onBinderDead")
             trySend(ActivateStatus.Disable)
         }
         Axeron.addBinderReceivedListener(receivedListener)
@@ -179,7 +179,7 @@ class ActivateViewModel : ViewModel() {
                     }
                 }
                 if (isStillUpdating) return@collect
-                Log.i("FolkPureBinder", "status: $status")
+                Log.i("AxoraBinder", "status: $status")
                 activateStatus = status
                 setTryToActivate(false)
             }
@@ -288,7 +288,7 @@ class ActivateViewModel : ViewModel() {
         try {
             context.startForegroundService(intent)
         } catch (e: Throwable) {
-            Log.e("FolkPure", "startForegroundService", e)
+            Log.e("Axora", "startForegroundService", e)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                 && e is ForegroundServiceStartNotAllowedException

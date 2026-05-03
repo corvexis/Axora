@@ -58,7 +58,7 @@ fun Color.toHexString(includeAlpha: Boolean = true): String {
 
 val AMOLED_BLACK: Color = Color(0xFF000000)
 
-val basePrimaryDefault = Color(0xFFFFB487)
+val basePrimaryDefault = Color(0xFF00E5FF)
 
 //private val baseSecondaryDefault = Color(0xFFDE5900)
 //private val baseTertiaryDefault = Color(0xFFAD6804)

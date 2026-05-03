@@ -89,7 +89,7 @@ set_perm_recursive() {
 reset_manager() {
   local debug=$1
 
-  print_title "Resetting FolkPure"
+  print_title "Resetting Axora"
   ui_print
   ui_print "$AXERONDIR"
   ui_print "- Removing plugins"
@@ -113,7 +113,7 @@ uninstall_axmanager() {
   local debug=$1
   local package=$2
 
-  print_title "Uninstalling FolkPure"
+  print_title "Uninstalling Axora"
   ui_print
 
   for plugin in "$AXERONDIR"/plugins/*; do
@@ -166,7 +166,7 @@ install_plugin() {
   mkdir -p "$MODPATH"
   
   print_title "$MODNAME" "by $MODAUTH"
-  print_title "Powered by FolkPure"
+  print_title "Powered by Axora"
 
   unzip -o "$ZIPFILE" customize.sh -d "$MODPATH" >&2
 

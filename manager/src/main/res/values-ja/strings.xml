@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FolkPure</string>
+    <string name="app_name">Axora</string>
     <string name="home_running">実行中</string>
     <string name="notification_warn_miui">MIUIユーザーは通知スタイルを「Android」に切り替える必要がある場合があります。</string>
     <string name="notification_warn_miui_2">それ以外の場合、通知からペアリングコードを入力できない可能性があります。</string>
@@ -40,7 +40,7 @@
     <string name="plugin_update_json_empty">なし</string>
     <string name="ignite">再読み込み</string>
     <string name="what_is_ignite">再読み込みとは？</string>
-    <string name="what_is_ignite_msg"><![CDATA[再読み込みはFolkPureで再起動の代わりとなる方法で、ホーム画面右上の電源ボタンから選択できます]]></string>
+    <string name="what_is_ignite_msg"><![CDATA[再読み込みはAxoraで再起動の代わりとなる方法で、ホーム画面右上の電源ボタンから選択できます]]></string>
     <string name="understand">了解しました</string>
     <string name="re_ignite_now">今すぐ再読み込み</string>
     <string name="install">インストール</string>
@@ -72,14 +72,14 @@
     <string name="connect_tcp_debugging">TCPポートに接続</string>
     <string name="stop_tcp_debugging">TCPポートを停止</string>
     <string name="enable_wireless_debugging">ワイヤレスデバッグを有効化</string>
-    <string name="enable_wireless_debugging_msg">「開発者オプション」で「ワイヤレスデバッグ」を有効にしてください。ネットワークが変更されると「ワイヤレスデバッグ」は自動的に無効になります。\n\n注意：「開発者オプション」または「USBデバッグ」を無効にしないでください。そうしないと、FolkPureサービスが停止します。</string>
+    <string name="enable_wireless_debugging_msg">「開発者オプション」で「ワイヤレスデバッグ」を有効にしてください。ネットワークが変更されると「ワイヤレスデバッグ」は自動的に無効になります。\n\n注意：「開発者オプション」または「USBデバッグ」を無効にしないでください。そうしないと、Axoraサービスが停止します。</string>
     <string name="open_developer_opt">開発者</string>
     <string name="step_by_step">ステップバイステップ</string>
     <string name="instruction">操作説明</string>
     <string name="enable_notification">通知権限を許可</string>
     <string name="start_pairing">ペアリングを開始</string>
     <string name="activate_by_root">直接有効化（Root権限があるデバイスのみ）</string>
-    <string name="activate_by_root_msg"><![CDATA[さらに、FolkPureはRoot権限を通じて起動時の自動起動を実現できます。実装されていない場合は、システムまたはRoot管理アプリがFolkPureを制限していないか確認してください。<br>%sを参照できます。]]></string>
+    <string name="activate_by_root_msg"><![CDATA[さらに、AxoraはRoot権限を通じて起動時の自動起動を実現できます。実装されていない場合は、システムまたはRoot管理アプリがAxoraを制限していないか確認してください。<br>%sを参照できます。]]></string>
     <string name="adb_tcp_not_ready">ポート %d は準備できていません</string>
     <string name="adb_tcp_stopped">ポートの停止に成功しました</string>
     <string name="failed_to_stop_adb_tcp">ポートを停止できませんでした</string>
@@ -121,9 +121,9 @@
     <string name="failed">失敗</string>
     <string name="idle">アイドル</string>
     <string name="support_me">開発者をサポート</string>
-    <string name="support_me_msg">FolkPureは完全に無料でオープンソースです。役に立つと思われる場合は、プロジェクトをフォローし、GitHubでスターを付けることを検討してください。</string>
-    <string name="learn_more">FolkPureについて</string>
-    <string name="learn_more_msg">FolkPureの使用方法とプラグインの作成方法について学びます</string>
+    <string name="support_me_msg">Axoraは完全に無料でオープンソースです。役に立つと思われる場合は、プロジェクトをフォローし、GitHubでスターを付けることを検討してください。</string>
+    <string name="learn_more">Axoraについて</string>
+    <string name="learn_more_msg">Axoraの使用方法とプラグインの作成方法について学びます</string>
     <string name="updating">更新中…</string>
     <string name="server_updating_version" formatted="false"><![CDATA[更新中: %d → %d]]></string>
     <string name="version_pid" formatted="false">バージョン: %d | PID: %d</string>
@@ -132,7 +132,7 @@
     <string name="home_need_fix">追加の手順が必要</string>
     <string name="home_need_fix_msg">クリックして修正方法を確認</string>
     <string name="home_not_running">有効化されていません</string>
-    <string name="home_not_running_msg">クリックしてFolkPureを有効化</string>
+    <string name="home_not_running_msg">クリックしてAxoraを有効化</string>
     <string name="home_update">再起動が必要</string>
     <string name="new_version_available">新しいバージョン %s が利用可能です、クリックして更新。</string>
     <string name="android_version">Androidバージョン</string>
@@ -145,7 +145,7 @@
     <string name="search_label_apps">アプリを検索</string>
     <string name="quick_shell">クイックシェル</string>
     <string name="quick_shell_short">QShell</string>
-    <string name="quick_shell_not_supported">まずFolkPureを有効化してください</string>
+    <string name="quick_shell_not_supported">まずAxoraを有効化してください</string>
     <string name="save">保存</string>
     <string name="exec">実行</string>
     <string name="send">共有</string>
@@ -165,7 +165,7 @@
     <string name="axeron_permission">AX権限管理</string>
     <string name="axeron_permission_desc">Shizuku-APIベースのAx-Environmentを使用して権限要求を管理</string>
     <string name="tcp_mode">ワイヤレスデバッグモード</string>
-    <string name="tcp_mode_desc">Wi-Fiがない場合でもFolkPureを自動的に有効化できます（FolkPureが起動後に少なくとも1回有効化されている必要があります）</string>
+    <string name="tcp_mode_desc">Wi-Fiがない場合でもAxoraを自動的に有効化できます（Axoraが起動後に少なくとも1回有効化されている必要があります）</string>
     <string name="invalid_port">ポートは1024から65535の間である必要があります</string>
     <string name="reactive_to_apply">再起動して変更を適用</string>
     <string name="active_on_boot">起動時自動有効化</string>
@@ -174,17 +174,17 @@
     <string name="please_wait">お待ちください…</string>
     <string name="view_command_message">`%s`\n\n他の注意事項があります。ステップガイドを読んだことを確認してください。</string>
     <string name="activate_by_computer">コンピュータコマンドラインで有効化</string>
-    <string name="activate_by_computer_desc">Rootがないデバイスの場合、ADBを使用してFolkPureを有効化する必要があります（コンピュータに接続が必要）。デバイスを再起動するたびにこの操作を繰り返す必要があります。</string>
+    <string name="activate_by_computer_desc">Rootがないデバイスの場合、ADBを使用してAxoraを有効化する必要があります（コンピュータに接続が必要）。デバイスを再起動するたびにこの操作を繰り返す必要があります。</string>
     <string name="activate_by_wireless">ワイヤレスデバッグで有効化</string>
     <string name="view_command">コマンドを表示</string>
     <string name="share_command">コマンドを共有</string>
-    <string name="active_on_boot_desc">デバイス起動時にFolkPureを自動的に有効化（実験的機能、Android 11+のRoot/ADBで実装）</string>
+    <string name="active_on_boot_desc">デバイス起動時にAxoraを自動的に有効化（実験的機能、Android 11+のRoot/ADBで実装）</string>
     <string name="ignite_when_relog">自動再読み込み</string>
-    <string name="ignite_when_relog_desc">FolkPureを起動すると、サービスを自動的に有効化しようとします</string>
-    <string name="reset_path">FolkPureをリセット</string>
-    <string name="reset_path_desc">この操作はFolkPureを初期状態に復元し、すべてのプラグインを削除します</string>
-    <string name="ask_reset_path">今すぐFolkPureをリセットしますか？</string>
-    <string name="ask_reset_path_desc">この操作はFolkPureを初期状態に復元し、すべてのプラグインを削除します\n\nディレクトリ %s</string>
+    <string name="ignite_when_relog_desc">Axoraを起動すると、サービスを自動的に有効化しようとします</string>
+    <string name="reset_path">Axoraをリセット</string>
+    <string name="reset_path_desc">この操作はAxoraを初期状態に復元し、すべてのプラグインを削除します</string>
+    <string name="ask_reset_path">今すぐAxoraをリセットしますか？</string>
+    <string name="ask_reset_path_desc">この操作はAxoraを初期状態に復元し、すべてのプラグインを削除します\n\nディレクトリ %s</string>
     <string name="reset">リセット</string>
     <string name="settings_editor">設定エディター</string>
     <string name="developer_and_maintainer">開発者 | メンテナー</string>
@@ -209,9 +209,7 @@
     <string name="permission_dont_allow_countdown">拒否 (%d秒)</string>
     <string name="uid_value">PID: %d</string>
     <string name="home_click_to_install">クリックしてインストール</string>
-    <string name="home_device_info">デバイス情報</string>
     <string name="home_kernel">カーネル</string>
-    <string name="home_system_version">システムバージョン</string>
     <string name="home_selinux_status">SELinuxステータス</string>
     <string name="settings_category_connection">接続</string>
     <string name="settings_category_activation">アクティベーション</string>

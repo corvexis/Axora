@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -14,10 +17,26 @@ android {
         applicationId = "frb.axeron.manager"
     }
 
+    val keystorePropertiesFile = rootProject.file("local.properties")
+    val keystoreProperties = Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("../axora-release.keystore")
+            storePassword = keystoreProperties.getProperty("keystore.password", "")
+            keyAlias = "axora"
+            keyPassword = keystoreProperties.getProperty("key.password", "")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -37,7 +56,7 @@ android {
     applicationVariants.all {
         outputs.all {
             val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            outputImpl.outputFileName = "FolkPure_v${versionName}_${versionCode}-${buildType.name}.apk"
+            outputImpl.outputFileName = "Axora_v${versionName}_${versionCode}-${buildType.name}.apk"
         }
     }
 

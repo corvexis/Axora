@@ -36,8 +36,8 @@ fun ActivationSettings(
     val igniteWhenRelogSummary = stringResource(R.string.ignite_when_relog_desc)
     val showIgniteWhenRelog = matchCategory || shouldShow(searchText, igniteWhenRelogTitle, igniteWhenRelogSummary)
     
-    val showCategory = showShizuku || showActivateOnBoot || showIgniteWhenRelog
-    
+    val showCategory = showActivateOnBoot || showIgniteWhenRelog || showShizuku
+
     if (showCategory) {
         SettingsCategory(
             icon = Icons.Filled.RestartAlt,
@@ -53,7 +53,7 @@ fun ActivationSettings(
                     onCheckedChange = onShizukuInterceptChange
                 )
             }
-            
+
             if (showActivateOnBoot) {
                 SwitchItem(
                     icon = Icons.Filled.RestartAlt,
