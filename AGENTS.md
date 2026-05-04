@@ -32,7 +32,7 @@ The `api/` directory is a git submodule pointing to `https://github.com/matsuzak
 - Hidden API access via `rikka.hidden` libraries
 
 ## Reignite Build Quirk
-Reignite extracts `classes*.dex` from its APK and copies it to `manager/src/main/assets/scripts/ax_reignite.dex` as a post-build step. If minified, mapping goes to `out/mapping/reignite-v*.txt`.
+Reignite extracts `classes*.dex` from its APK and copies it to `manager/src/main/assets/scripts/ax_reignite.dex` as a post-build step; build reignite before manager to update the embedded dex. If minified, mapping goes to `out/mapping/reignite-v*.txt`.
 
 ## Website (VitePress)
 Located in `website/`, requires Bun:
@@ -40,7 +40,7 @@ Located in `website/`, requires Bun:
 cd website && bun install && bun run dev    # Dev server
 cd website && bun run build                # Build static site
 ```
-Deployed to GitHub Pages via CI on pushes to `main`.
+Deployed to GitHub Pages via CI on pushes to `main` that modify `website/**`.
 
 ## Version Scheme
 Version code: `api_version` property + git commit count
