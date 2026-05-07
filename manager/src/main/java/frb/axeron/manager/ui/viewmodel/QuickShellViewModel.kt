@@ -14,7 +14,7 @@ import frb.axeron.api.Axeron
 import frb.axeron.api.AxeronCommandSession
 import frb.axeron.api.core.AxeronSettings
 import frb.axeron.api.utils.AnsiFilter
-import frb.axeron.axerish.R
+import frb.axeron.manager.R
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch

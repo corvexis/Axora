@@ -243,4 +243,14 @@
     <string name="update_close">Close</string>
     <string name="update_latest">You are on the latest version</string>
     <string name="update_error">Error checking for updates</string>
+    <string name="type_command">Command</string>
+    <string name="type_start">Start</string>
+    <string name="type_stdin">Stdin</string>
+    <string name="type_stdout">Stdout</string>
+    <string name="type_stderr">Stderr</string>
+    <string name="type_throw">Error</string>
+    <string name="type_space"> </string>
+    <string name="type_exit">Exit</string>
+    <string name="volume_up">Volume Up</string>
+    <string name="volume_down">Volume Down</string>
 </resources>
