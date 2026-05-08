@@ -14,7 +14,7 @@ android {
     namespace = "frb.axeron.manager"
 
     defaultConfig {
-        applicationId = "frb.axeron.manager"
+        applicationId = "dev.axora.manager"
     }
 
     val keystorePropertiesFile = rootProject.file("local.properties")
