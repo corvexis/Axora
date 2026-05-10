@@ -38,6 +38,7 @@ public class BinderSender {
     private static final String PERMISSION = "moe.shizuku.manager.permission.API_V23";
 
     private static IAxeronService axeronService;
+    private static boolean registered = false;
 
     private static final Map<Integer, List<String>> UID_PACKAGE_CACHE = new ConcurrentHashMap<>();
     private static final Set<String> SENT_BINDERS = ConcurrentHashMap.newKeySet();
@@ -197,6 +198,8 @@ public class BinderSender {
 //    }
 
     public static void register(IAxeronService service) {
+        if (registered) return;
+        registered = true;
         axeronService = service;
 
         try {

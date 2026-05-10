@@ -100,6 +100,20 @@ public class AxeronConfigManager extends ConfigManager {
             }
         }
 
+        File companionFile = new File(
+                PathHelper.getWorkingPath(Os.getuid() == 0, AxeronApiConstant.folder.PARENT),
+                "ax_perm_companion"
+        );
+        if (companionFile.exists()) {
+            scanAllPackages();
+        }
+
+        if (changed) {
+            scheduleWriteLocked();
+        }
+    }
+
+    private void scanAllPackages() {
         for (int userId : UserManagerApis.getUserIdsNoThrow()) {
             for (PackageInfo pi : PackageManagerApis.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS, userId)) {
                 if (pi == null
@@ -122,11 +136,17 @@ public class AxeronConfigManager extends ConfigManager {
                 packages.add(pkg);
 
                 updateLocked(uid, packages, ConfigManager.MASK_PERMISSION, allowed ? ConfigManager.FLAG_ALLOWED : ConfigManager.FLAG_DENIED);
-                changed = true;
             }
         }
+    }
 
-        if (changed) {
+    public synchronized void rescan() {
+        File companionFile = new File(
+                PathHelper.getWorkingPath(Os.getuid() == 0, AxeronApiConstant.folder.PARENT),
+                "ax_perm_companion"
+        );
+        if (companionFile.exists()) {
+            scanAllPackages();
             scheduleWriteLocked();
         }
     }

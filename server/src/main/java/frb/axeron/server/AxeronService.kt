@@ -369,16 +369,8 @@ open class AxeronService :
 
         if (axCompanion.exists()) {
             shizuku = ShizukuServiceIntercept(this)
+            BinderSender.register(asInterface(this))
         }
-
-        // make ApkChangedObservers lazy or start on-demand; and keep reference to listener so you can stop it
-//        val apkObserver = ApkChangedListener {
-//            if (getManagerApplicationInfo() == null) exitProcess(ServerConstants.MANAGER_APP_NOT_FOUND)
-//        }
-//        ApkChangedObservers.start(ai.sourceDir, mainHandler, apkObserver)
-
-
-        BinderSender.register(asInterface(this))
 
         mainHandler.post {
             sendBinderToClient()
@@ -408,6 +400,9 @@ open class AxeronService :
             if (axCompanion.createNewFile()) {
                 LOGGER.i("AX-Scope")
                 shizuku = ShizukuServiceIntercept(this)
+                BinderSender.register(asInterface(this))
+                sendBinderToClient()
+                configManager.rescan()
             }
         } else {
             if (axCompanion.delete()) {
@@ -690,6 +685,19 @@ open class AxeronService :
             if (clientRecord == null) {
                 LOGGER.w("Add client failed")
                 return
+            }
+
+            if (isManager) {
+                try {
+                    application.asBinder().linkToDeath({
+                        mainHandler.postDelayed({
+                            LOGGER.i("Manager process died, re-sending binder")
+                            sendBinderToManager()
+                        }, 3000)
+                    }, 0)
+                } catch (e: RemoteException) {
+                    LOGGER.e(e, "Failed to set death recipient on manager binder")
+                }
             }
         }
 
