@@ -17,6 +17,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     val themeOptions = listOf("Follow System", "Dark Theme", "Light Theme")
 
+    var isAutoRestartEnabled by mutableStateOf(
+        AxeronSettings.getEnableAutoRestart()
+    )
+        private set
+
     var isIgniteWhenRelogEnabled by mutableStateOf(
         AxeronSettings.getEnableIgniteRelog()
     )
@@ -57,7 +62,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
         private set
 
+    var isSystemFontEnabled by mutableStateOf(
+        AxeronSettings.getSystemFont()
+    )
+        private set
+
+    var fontChoice by mutableStateOf(
+        AxeronSettings.getFontChoice()
+    )
+        private set
+
     // fungsi toggle / set manual
+
+    fun setAutoRestart(enabled: Boolean) {
+        viewModelScope.launch {
+            isAutoRestartEnabled = enabled
+            AxeronSettings.setEnableAutoRestart(enabled)
+        }
+    }
 
     fun setIgniteWhenRelog(enabled: Boolean) {
         viewModelScope.launch {
@@ -112,6 +134,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             isWebDebuggingEnabled = enabled
             AxeronSettings.setEnableWebDebugging(enabled)
+        }
+    }
+
+    fun setSystemFont(enabled: Boolean) {
+        viewModelScope.launch {
+            isSystemFontEnabled = enabled
+            AxeronSettings.setSystemFont(enabled)
+        }
+    }
+
+    fun updateFontChoice(choice: String) {
+        viewModelScope.launch {
+            fontChoice = choice
+            AxeronSettings.setFontChoice(choice)
         }
     }
 

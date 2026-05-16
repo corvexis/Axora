@@ -1,8 +1,10 @@
 package frb.axeron.manager.ui.screen
 
 import android.os.Build
+import android.os.SystemClock
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,13 +17,17 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
@@ -73,6 +79,7 @@ fun HomeCircleScreen(
                 }
             }
         }
+        activateViewModel.setRestartContext(context)
     }
 
     if (showUpdateDialog) {
@@ -91,8 +98,8 @@ fun HomeCircleScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
                     )
                 },
                 actions = {
@@ -116,8 +123,12 @@ fun HomeCircleScreen(
                                     }
                                 }
                             },
-                            onShutdown = { Axeron.destroy() },
+                            onShutdown = {
+                                activateViewModel.markIntentionalStop()
+                                Axeron.destroy()
+                            },
                             onRestart = {
+                                activateViewModel.markIntentionalStop()
                                 Axeron.newProcess(
                                     AxeronCommandSession.getQuickCmd(
                                         Starter.internalCommand,
@@ -212,6 +223,27 @@ fun StatusCardCircle(
     val status = activateViewModel.activateStatus
     val isRunning = status is ActivateViewModel.ActivateStatus.Running
 
+    var time by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(isRunning) {
+        if (isRunning) {
+            while (true) {
+                time = SystemClock.elapsedRealtime() - axeronInfo.serverInfo.starting
+                delay(1000)
+            }
+        }
+    }
+
+    fun formatUptime(millis: Long): String {
+        val totalSeconds = millis / 1000
+        val days = totalSeconds / 86400
+        val hours = (totalSeconds % 86400) / 3600
+        val minutes = (totalSeconds % 3600) / 60
+        val seconds = totalSeconds % 60
+        val dayPart = if (days > 0) "${days}d " else ""
+        return "T+${dayPart}%02d:%02d:%02d".format(hours, minutes, seconds)
+    }
+
     TonalCard(
         containerColor = when (status) {
             is ActivateViewModel.ActivateStatus.Running -> MaterialTheme.colorScheme.secondaryContainer
@@ -220,82 +252,114 @@ fun StatusCardCircle(
             else -> MaterialTheme.colorScheme.errorContainer
         }
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
                     when (status) {
-                        is ActivateViewModel.ActivateStatus.Running -> {
-                        }
-                        else -> {
-                            navigator.navigate(ActivateScreenDestination)
-                        }
+                        is ActivateViewModel.ActivateStatus.Running -> {}
+                        else -> navigator.navigate(ActivateScreenDestination)
                     }
                 }
-                .padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
         ) {
             if (isRunning) {
-                Icon(Icons.Outlined.CheckCircle, stringResource(R.string.home_running))
-                Column(Modifier.padding(start = 20.dp)) {
-                    val modeLabel = axeronInfo.serverInfo.getMode().label
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = stringResource(R.string.home_running),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        ModeLabelText(label = modeLabel)
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Version: ${axeronInfo.getVersionCode()} | Pid: ${axeronInfo.serverInfo.pid}",
-                        style = MaterialTheme.typography.bodyMedium
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .offset(x = 10.dp, y = 5.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_thunderbolt),
+                        modifier = Modifier.size(80.dp),
+                        contentDescription = null
                     )
                 }
-            } else {
-                when (status) {
-                    is ActivateViewModel.ActivateStatus.Updating -> {
-                        Icon(Icons.Outlined.SystemUpdate, stringResource(R.string.updating))
-                        Column(Modifier.padding(start = 20.dp)) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                                )
+                            )
+                        )
+                )
+            }
+
+            Row(
+                modifier = Modifier.padding(24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isRunning) {
+                    Icon(Icons.Outlined.CheckCircle, stringResource(R.string.home_running))
+                    Column(Modifier.padding(start = 20.dp)) {
+                        val modeLabel = axeronInfo.serverInfo.getMode().label
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = stringResource(R.string.updating),
+                                text = stringResource(R.string.home_running),
                                 style = MaterialTheme.typography.titleMedium
                             )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.home_not_running_msg),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            Spacer(Modifier.width(8.dp))
+                            ModeLabelText(label = modeLabel)
                         }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Version: ${axeronInfo.getVersionCode()} | Pid: ${axeronInfo.serverInfo.pid}",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp)
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = formatUptime(time),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    is ActivateViewModel.ActivateStatus.NeedExtraStep -> {
-                        Icon(Icons.Outlined.Build, stringResource(R.string.home_need_fix))
-                        Column(Modifier.padding(start = 20.dp)) {
-                            Text(
-                                text = stringResource(R.string.home_need_fix),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.home_need_fix_msg),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                } else {
+                    when (status) {
+                        is ActivateViewModel.ActivateStatus.Updating -> {
+                            Icon(Icons.Outlined.SystemUpdate, stringResource(R.string.updating))
+                            Column(Modifier.padding(start = 20.dp)) {
+                                Text(
+                                    text = stringResource(R.string.updating),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(R.string.home_not_running_msg),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
+                                )
+                            }
                         }
-                    }
-                    else -> {
-                        Icon(Icons.Outlined.Warning, stringResource(R.string.home_not_running))
-                        Column(Modifier.padding(start = 20.dp)) {
-                            Text(
-                                text = stringResource(R.string.home_not_running),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.home_click_to_install),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                        is ActivateViewModel.ActivateStatus.NeedExtraStep -> {
+                            Icon(Icons.Outlined.Build, stringResource(R.string.home_need_fix))
+                            Column(Modifier.padding(start = 20.dp)) {
+                                Text(
+                                    text = stringResource(R.string.home_need_fix),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(R.string.home_need_fix_msg),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
+                                )
+                            }
+                        }
+                        else -> {
+                            Icon(Icons.Outlined.Warning, stringResource(R.string.home_not_running))
+                            Column(Modifier.padding(start = 20.dp)) {
+                                Text(
+                                    text = stringResource(R.string.home_not_running),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(R.string.home_click_to_install),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
+                                )
+                            }
                         }
                     }
                 }

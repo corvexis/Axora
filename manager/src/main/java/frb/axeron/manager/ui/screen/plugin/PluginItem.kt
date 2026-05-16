@@ -57,6 +57,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ramcosta.composedestinations.generated.destinations.ExecutePluginActionScreenDestination
@@ -370,25 +371,25 @@ fun PluginItem(
 
                             Text(
                                 text = plugin.prop.name,
-                                fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
                                 lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
                                 fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
                             )
 
                             Text(
                                 text = "$pluginVersion: ${plugin.prop.version}",
-                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
+                                fontSize = 11.sp,
+                                lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
+                                fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
                             Text(
                                 text = "$pluginAuthor: ${plugin.prop.author}",
-                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
+                                fontSize = 11.sp,
+                                lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
+                                fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
@@ -400,33 +401,33 @@ fun PluginItem(
                                 Column {
                                     Text(
                                         text = "$pluginId: ${plugin.prop.id}",
-                                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
+                                        fontSize = 9.sp,
+                                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
+                                        fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
 
                                     Text(
                                         text = "$pluginVersionCode: ${plugin.prop.versionCode}",
-                                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
+                                        fontSize = 9.sp,
+                                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
+                                        fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
 
                                     Text(
                                         text = "$pluginAxeronSupport: ${plugin.prop.axeronPlugin}",
-                                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
+                                        fontSize = 9.sp,
+                                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
+                                        fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
 
                                     Text(
                                         text = if (plugin.prop.updateJson.isNotEmpty()) "$pluginUpdateJson: ${plugin.prop.updateJson}" else "$pluginUpdateJson: $pluginUpdateJsonEmpty",
-                                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
+                                        fontSize = 9.sp,
+                                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
+                                        fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -454,10 +455,10 @@ fun PluginItem(
 
                     Text(
                         text = plugin.prop.description,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                        fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
+                        fontSize = 11.sp,
+                        fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
+                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
+                        fontWeight = MaterialTheme.typography.labelSmall.fontWeight,
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 4
@@ -495,14 +496,6 @@ fun PluginItem(
                                         imageVector = Icons.Outlined.Terminal,
                                         contentDescription = null
                                     )
-                                    if (!plugin.hasWebUi && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            text = stringResource(R.string.action),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize
-                                        )
-                                    }
                                 }
 
                                 Spacer(modifier = Modifier.weight(0.1f, true))
@@ -523,14 +516,6 @@ fun PluginItem(
                                         imageVector = Icons.Filled.Web,
                                         contentDescription = null
                                     )
-                                    if (!plugin.hasActionScript && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.open)
-                                        )
-                                    }
                                 }
                             }
 
@@ -551,14 +536,6 @@ fun PluginItem(
                                         imageVector = Icons.Outlined.Download,
                                         contentDescription = null
                                     )
-                                    if (!plugin.hasActionScript || !plugin.hasWebUi) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.update)
-                                        )
-                                    }
                                 }
 
                                 Spacer(modifier = Modifier.weight(0.1f, true))
@@ -577,14 +554,6 @@ fun PluginItem(
                                         imageVector = Icons.Outlined.Restore,
                                         contentDescription = null
                                     )
-                                    if (!plugin.hasActionScript && !plugin.hasWebUi && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.restore)
-                                        )
-                                    }
                                 }
                             } else {
                                 FilledTonalButton(
@@ -600,14 +569,6 @@ fun PluginItem(
                                         imageVector = Icons.Outlined.Delete,
                                         contentDescription = null
                                     )
-                                    if (!plugin.hasActionScript && !plugin.hasWebUi && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.uninstall)
-                                        )
-                                    }
                                 }
                             }
                         }

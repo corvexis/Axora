@@ -13,10 +13,10 @@
     <string name="home">Home</string>
     <string name="privilege">Privilege</string>
     <string name="privilege_plural">Privileges</string>
-    <string name="plugin">Plugin</string>
-    <string name="plugin_plural">Plugins</string>
+    <string name="plugin">Add-on</string>
+    <string name="plugin_plural">Add-ons</string>
     <string name="settings">Settings</string>
-    <string name="search_label_plugin">Search Plugin</string>
+    <string name="search_label_plugin">Search Add-ons</string>
     <string name="permission_denied">Permission Denied</string>
     <string name="ascending">Ascending</string>
     <string name="descending">Descending</string>
@@ -63,7 +63,7 @@
     <string name="restart_service">Restart Service</string>
     <string name="ask_restore_plugin">Restore Plugin?</string>
     <string name="restore_plugin_confirmation">Are you sure you want to restore plugin %s?</string>
-    <string name="no_plugin_installed">No plugin installed</string>
+    <string name="no_plugin_installed">No add-ons installed</string>
     <string name="activate">Activate</string>
     <string name="activate_by_tcp">Activate by TCP Debugging</string>
     <string name="activate_by_tcp_desc">You can Activate using TCP debugging, without connecting to a computer.</string>
@@ -182,6 +182,8 @@
     <string name="activate_by_wireless">Start via Wireless Debugging</string>
     <string name="view_command">View Command</string>
     <string name="share_command">Share Command</string>
+    <string name="auto_restart">Auto restart</string>
+    <string name="auto_restart_desc">Automatically restart Axora when the server process is killed by the system</string>
     <string name="active_on_boot_desc">Auto activate Axora on boot (Root / ADB on Android 11+ (Experimental))</string>
     <string name="ignite_when_relog">Relog to Ignite</string>
     <string name="ignite_when_relog_desc">When you relog Axora will Re-Ignite</string>
@@ -232,6 +234,15 @@
     <string name="preset_sky_blue">Sky Blue</string>
     <string name="preset_crimson_red">Crimson Red</string>
     <string name="preset_sunset_orange">Sunset Orange</string>
+    <string name="system_font">System Font</string>
+    <string name="system_font_desc">Use system default font instead of monospace</string>
+    <string name="font_jetbrains_mono">JetBrains Mono (Default)</string>
+    <string name="font_caskaydia_mono">CaskaydiaMono Nerd Font</string>
+    <string name="font_overpass">Overpass Nerd Font</string>
+    <string name="font_firacode">Firacode Nerd Font</string>
+    <string name="font_hurmit">Hurmit Nerd Font</string>
+    <string name="font_heavydata">HeavyData Nerd Font</string>
+    <string name="font_droid_sans_mono">DroidSansM Nerd Font</string>
     <string name="color_presets">Color Presets</string>
     <string name="confirm">Confirm</string>
     <string name="settings_check_update">Check for Updates</string>

@@ -31,6 +31,7 @@ import dev.rikka.tools.refine.Refine
 import frb.axeron.server.ServerConstants.MANAGER_APPLICATION_ID
 import frb.axeron.server.ServerConstants.PERMISSION
 import frb.axeron.server.ServerConstants.SHIZUKU_MANAGER_APPLICATION_ID
+import frb.axeron.server.api.ProcessPoolManager
 import frb.axeron.server.api.RemoteProcessHolder
 import frb.axeron.server.util.HandlerUtil
 import frb.axeron.server.util.IContentProviderCompat
@@ -508,12 +509,18 @@ open class AxeronService :
             cmd.contentToString()
         )
 
+        val pool = ProcessPoolManager.getInstance()
+        pool.acquireProcessBlocking("newProcess/${cmd?.contentToString()}")
+
         val process: Process?
         try {
             process = Runtime.getRuntime().exec(cmd, env, if (dir != null) File(dir) else null)
         } catch (e: IOException) {
+            pool.cancelAcquire()
             throw IllegalStateException(e.message)
         }
+
+        pool.registerProcess(process)
 
         val clientRecord = clientManager.findClient(getCallingUid(), getCallingPid())
         val token = clientRecord?.client?.asBinder()
@@ -690,10 +697,10 @@ open class AxeronService :
             if (isManager) {
                 try {
                     application.asBinder().linkToDeath({
-                        mainHandler.postDelayed({
-                            LOGGER.i("Manager process died, re-sending binder")
+                        mainHandler.post({
+                            LOGGER.i("Manager process died, re-sending binder immediately")
                             sendBinderToManager()
-                        }, 3000)
+                        })
                     }, 0)
                 } catch (e: RemoteException) {
                     LOGGER.e(e, "Failed to set death recipient on manager binder")

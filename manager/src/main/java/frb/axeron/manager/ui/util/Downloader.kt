@@ -20,6 +20,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import com.google.gson.JsonParser
 import java.nio.charset.StandardCharsets
 
 /**
@@ -73,26 +74,29 @@ fun download(
 suspend fun checkNewVersion(): Boolean {
     return withContext(Dispatchers.IO) {
         try {
-            val url = URL("https://folk.mysqil.com/api/version3.php")
+            val url = URL("https://api.github.com/repos/corvexis/Axora/releases/latest")
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
+            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
             connection.connectTimeout = 5000
             connection.readTimeout = 5000
 
             if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                 val reader = BufferedReader(InputStreamReader(connection.inputStream, StandardCharsets.UTF_8))
-                val rawResponse = reader.readText()
+                val response = reader.readText()
                 reader.close()
 
-                val remoteVersionCodeStr = rawResponse.replace("\uFEFF", "").trim()
-                Log.d("UpdateChecker", "Raw response: '$rawResponse', Parsed string: '$remoteVersionCodeStr'")
+                val json = JsonParser.parseString(response).asJsonObject
+                val tagName = json.get("tag_name").asString.removePrefix("v")
+                Log.d("UpdateChecker", "Remote tag: $tagName, Local: ${BuildConfig.VERSION_NAME}")
 
-                val remoteVersionCode = remoteVersionCodeStr.toIntOrNull()
-                if (remoteVersionCode != null) {
-                    Log.d("UpdateChecker", "Remote: $remoteVersionCode, Local: ${BuildConfig.VERSION_CODE}")
-                    return@withContext remoteVersionCode > BuildConfig.VERSION_CODE
+                val remoteCommitCount = tagName.substringAfter(".r").toIntOrNull()
+                val localCommitCount = BuildConfig.VERSION_NAME.substringAfter(".r").toIntOrNull()
+
+                if (remoteCommitCount != null && localCommitCount != null) {
+                    return@withContext remoteCommitCount > localCommitCount
                 } else {
-                    Log.e("UpdateChecker", "Failed to parse version code")
+                    Log.e("UpdateChecker", "Failed to parse version from tag: $tagName")
                 }
             }
             false
@@ -105,7 +109,7 @@ suspend fun checkNewVersion(): Boolean {
 
 fun openUpdateUrl(context: Context) {
     try {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Sophctl/Axora/releases"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/corvexis/Axora/releases"))
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     } catch (e: Exception) {

@@ -174,6 +174,10 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                 },
                 dynamicColorEnabled = settings.isDynamicColorEnabled,
                 onDynamicColorChange = { settings.setDynamicColor(it) },
+                systemFontEnabled = settings.isSystemFontEnabled,
+                onSystemFontChange = { settings.setSystemFont(it) },
+                fontChoice = settings.fontChoice,
+                onFontChoiceChange = { settings.updateFontChoice(it) },
                 currentLanguageDisplay = currentLanguageDisplay,
                 onLanguageClick = {
                     LocaleHelper.launchSystemLanguageSettings(context)
@@ -191,8 +195,10 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                 searchText = searchText,
                 axeronRunning = axeronRunning,
                 isActivateOnBootEnabled = settings.isActivateOnBootEnabled,
+                isAutoRestartEnabled = settings.isAutoRestartEnabled,
                 isIgniteWhenRelogEnabled = settings.isIgniteWhenRelogEnabled,
                 onActivateOnBootChange = { settings.setActivateOnBoot(it) },
+                onAutoRestartChange = { settings.setAutoRestart(it) },
                 onIgniteWhenRelogChange = { settings.setIgniteWhenRelog(it) },
                 isShizukuActive = activateViewModel.isShizukuActive,
                 onShizukuInterceptChange = { activateViewModel.setShizukuIntercept(it) }

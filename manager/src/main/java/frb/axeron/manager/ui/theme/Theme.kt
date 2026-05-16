@@ -53,7 +53,8 @@ fun AxManagerTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography
+        typography = if (settingsViewModel.isSystemFontEnabled) SystemTypography
+        else fontTypographyMap[settingsViewModel.fontChoice] ?: fontTypographyMap["jetbrains_mono"]!!
     ) {
         contentCompose(settingsViewModel)
     }

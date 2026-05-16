@@ -26,7 +26,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "FolkPure"
+rootProject.name = "Axora"
 include(":manager")
 include(":server")
 include(":adb")

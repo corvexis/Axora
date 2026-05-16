@@ -112,7 +112,7 @@ class WebUIActivity : ComponentActivity() {
 
     private suspend fun setupWebView() {
         plugin = Axeron.getPluginById(intent.getStringExtra("id") ?: finishAndRemoveTask().let {
-            Toast.makeText(this, "Plugin-Id not found", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Add-on ID not found", Toast.LENGTH_SHORT).show()
             return
         })
 
@@ -120,9 +120,9 @@ class WebUIActivity : ComponentActivity() {
             Toast.makeText(
                 this,
                 when {
-                    plugin.remove -> "Plugin removed"
-                    !plugin.enabled -> "Plugin disabled"
-                    else -> "Plugin has no web UI"
+                    plugin.remove -> "Add-on removed"
+                    !plugin.enabled -> "Add-on disabled"
+                    else -> "Add-on has no web UI"
                 },
                 Toast.LENGTH_SHORT
             ).show()

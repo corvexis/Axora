@@ -69,6 +69,7 @@ fun PluginList(
     val confirmDialog = rememberConfirmDialog()
 
     var expandedPluginId by rememberSaveable { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     val updateText = stringResource(R.string.update)
     val changelogText = stringResource(R.string.changelog)
@@ -216,12 +217,13 @@ fun PluginList(
             viewModel.fetchModuleList()
         }
     ) {
+        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .nestedScroll(TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState()).nestedScrollConnection),
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = remember {
                 PaddingValues(
@@ -249,7 +251,6 @@ fun PluginList(
 
                 else -> {
                     items(viewModel.pluginList) { plugin ->
-                        val scope = rememberCoroutineScope()
                         val updatedModule by produceState(
                             key1 = plugin.prop.id,
                             initialValue = Triple("", "", "")

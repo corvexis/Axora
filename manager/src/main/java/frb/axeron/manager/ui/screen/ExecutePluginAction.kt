@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.dropUnlessResumed
 import com.fox2code.androidansi.ktx.parseAsAnsiAnnotatedString
 import com.ramcosta.composedestinations.annotation.Destination
@@ -195,7 +196,8 @@ fun ExecutePluginActionScreen(
                 modifier = Modifier.padding(8.dp),
                 text = text.parseAsAnsiAnnotatedString(),
                 style = MaterialTheme.typography.bodySmall.copy(
-                    lineHeight = MaterialTheme.typography.bodyMedium.fontSize, // samain dengan fontSize
+                    fontSize = 11.sp,
+                    lineHeight = 11.sp,
                     lineHeightStyle = LineHeightStyle(
                         alignment = LineHeightStyle.Alignment.Center,
                         trim = LineHeightStyle.Trim.Both

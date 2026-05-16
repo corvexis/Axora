@@ -12,5 +12,5 @@
     <color name="white_text_secondary">#BABABA</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="ic_launcher_background">#FFFFFFFF</color>
+    <color name="ic_launcher_background">#FF0D0D2B</color>
 </resources>

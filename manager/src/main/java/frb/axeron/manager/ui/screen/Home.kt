@@ -72,6 +72,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActivateScreenDestination
@@ -137,6 +138,7 @@ fun HomeScreenOriginal(navigator: DestinationsNavigator, viewModelGlobal: ViewMo
                 }
             }
         }
+        activateViewModel.setRestartContext(context)
     }
 
     if (showUpdateDialog) {
@@ -155,8 +157,8 @@ fun HomeScreenOriginal(navigator: DestinationsNavigator, viewModelGlobal: ViewMo
                 title = {
                     Text(
                         text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
                     )
                 },
                 actions = {
@@ -179,8 +181,12 @@ fun HomeScreenOriginal(navigator: DestinationsNavigator, viewModelGlobal: ViewMo
                                     }
                                 }
                             },
-                            onShutdown = { Axeron.destroy() },
+                            onShutdown = {
+                                activateViewModel.markIntentionalStop()
+                                Axeron.destroy()
+                            },
                             onRestart = {
+                                activateViewModel.markIntentionalStop()
                                 Axeron.newProcess(
                                     AxeronCommandSession.getQuickCmd(
                                         Starter.internalCommand,
@@ -435,7 +441,7 @@ fun StatusCard(
                         )
                         Text(
                             text = serverUpdatingVersion.format(axeronInfo.getVersionCode(), VERSION_CODE),
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
                         )
                     }
                 }
@@ -478,7 +484,7 @@ fun StatusCard(
                         )
                         Text(
                             text = stringResource(R.string.home_need_fix_msg),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
                         )
                     }
                 }
@@ -537,7 +543,7 @@ fun StatusCard(
 
                         Text(
                             text = versionPid.format(axeronInfo.getVersionCode(), axeronInfo.serverInfo.pid),
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
                         )
 
                         Spacer(Modifier.weight(1f))
@@ -572,7 +578,7 @@ fun StatusCard(
 
                         Text(
                             text = formatUptime(time),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontFamily = FontFamily.Monospace
                         )
@@ -618,7 +624,7 @@ fun StatusCard(
                         )
                         Text(
                             text = stringResource(R.string.home_not_running_msg),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
                         )
                     }
 

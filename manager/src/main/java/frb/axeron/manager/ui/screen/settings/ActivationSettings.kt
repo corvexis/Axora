@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import frb.axeron.manager.R
@@ -15,8 +16,10 @@ fun ActivationSettings(
     searchText: String,
     axeronRunning: Boolean,
     isActivateOnBootEnabled: Boolean,
+    isAutoRestartEnabled: Boolean,
     isIgniteWhenRelogEnabled: Boolean,
     onActivateOnBootChange: (Boolean) -> Unit,
+    onAutoRestartChange: (Boolean) -> Unit,
     onIgniteWhenRelogChange: (Boolean) -> Unit,
     isShizukuActive: Boolean,
     onShizukuInterceptChange: (Boolean) -> Unit
@@ -32,11 +35,15 @@ fun ActivationSettings(
     val activateOnBootSummary = stringResource(R.string.active_on_boot_desc)
     val showActivateOnBoot = matchCategory || shouldShow(searchText, activateOnBootTitle, activateOnBootSummary)
     
+    val autoRestartTitle = stringResource(R.string.auto_restart)
+    val autoRestartSummary = stringResource(R.string.auto_restart_desc)
+    val showAutoRestart = matchCategory || shouldShow(searchText, autoRestartTitle, autoRestartSummary)
+    
     val igniteWhenRelogTitle = stringResource(R.string.ignite_when_relog)
     val igniteWhenRelogSummary = stringResource(R.string.ignite_when_relog_desc)
     val showIgniteWhenRelog = matchCategory || shouldShow(searchText, igniteWhenRelogTitle, igniteWhenRelogSummary)
     
-    val showCategory = showActivateOnBoot || showIgniteWhenRelog || showShizuku
+    val showCategory = showActivateOnBoot || showAutoRestart || showIgniteWhenRelog || showShizuku
 
     if (showCategory) {
         SettingsCategory(
@@ -61,6 +68,16 @@ fun ActivationSettings(
                     summary = activateOnBootSummary,
                     checked = isActivateOnBootEnabled,
                     onCheckedChange = onActivateOnBootChange
+                )
+            }
+
+            if (showAutoRestart) {
+                SwitchItem(
+                    icon = Icons.Filled.Replay,
+                    title = autoRestartTitle,
+                    summary = autoRestartSummary,
+                    checked = isAutoRestartEnabled,
+                    onCheckedChange = onAutoRestartChange
                 )
             }
             

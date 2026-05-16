@@ -28,7 +28,9 @@ import frb.axeron.manager.adb.AdbStarter
 import frb.axeron.manager.adb.AdbStarter.stopTcp
 import frb.axeron.manager.adb.AdbStateInfo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
@@ -41,7 +43,7 @@ class ActivateViewModel : ViewModel() {
         const val ACTIVATE_FAILED = -1
         const val ACTIVATE_PROCESS = 0
         const val ACTIVATE_SUCCESS = 1
-
+        const val MAX_AUTO_RETRIES = 10
     }
 
     var activateStatus by mutableStateOf<ActivateStatus>(run {
@@ -94,6 +96,23 @@ class ActivateViewModel : ViewModel() {
         }
     }
 
+    // Auto-restart state
+    private var autoRestartJob: Job? = null
+    private var retryCount = 0
+    private var wasRunning = false
+    var intentionalStop by mutableStateOf(false)
+        private set
+
+    private var _restartContext: Context? = null
+
+    fun markIntentionalStop() {
+        intentionalStop = true
+        autoRestartJob?.cancel()
+    }
+
+    fun setRestartContext(context: Context) {
+        _restartContext = context
+    }
 
     sealed class ActivateStatus {
         object Disable : ActivateStatus()
@@ -160,25 +179,36 @@ class ActivateViewModel : ViewModel() {
             axeronObserve().collect { status ->
                 val isStillUpdating =
                     status is ActivateStatus.Disable && activateStatus is ActivateStatus.Updating
-                axeronInfo = when (status) {
+
+                when (status) {
                     is ActivateStatus.Running -> {
+                        wasRunning = true
+                        intentionalStop = false
+                        retryCount = 0
+                        autoRestartJob?.cancel()
                         checkShizukuIntercept()
-                        status.axeronInfo
+                        axeronInfo = status.axeronInfo
                     }
 
                     is ActivateStatus.Updating -> {
-                        status.axeronInfo
+                        axeronInfo = status.axeronInfo
                     }
 
                     else -> {
-                        if (isStillUpdating) {
+                        axeronInfo = if (isStillUpdating) {
                             (activateStatus as ActivateStatus.Updating).axeronInfo
                         } else {
                             AxeronInfo()
                         }
                     }
                 }
+
                 if (isStillUpdating) return@collect
+
+                if (status is ActivateStatus.Disable && wasRunning && !intentionalStop && AxeronSettings.getEnableAutoRestart()) {
+                    launchAutoRestart()
+                }
+
                 Log.i("AxoraBinder", "status: $status")
                 activateStatus = status
                 setTryToActivate(false)
@@ -186,7 +216,61 @@ class ActivateViewModel : ViewModel() {
         }
     }
 
+    private fun launchAutoRestart() {
+        autoRestartJob?.cancel()
+        autoRestartJob = viewModelScope.launch(Dispatchers.IO) {
+            while (retryCount < MAX_AUTO_RETRIES && !intentionalStop) {
+                if (Axeron.pingBinder()) break
+
+                val delay = minOf(1000L shl retryCount, 30000L)
+                delay(delay)
+
+                if (intentionalStop || Axeron.pingBinder()) break
+
+                retryCount++
+                Log.i(TAG, "Auto-restart attempt $retryCount/$MAX_AUTO_RETRIES")
+
+                when (AxeronSettings.getLastLaunchMode()) {
+                    AxeronSettings.LaunchMethod.ROOT -> tryRootRestart()
+                    AxeronSettings.LaunchMethod.ADB -> tryAdbRestart()
+                }
+            }
+        }
+    }
+
+    private fun tryRootRestart() {
+        runCatching {
+            if (Shell.getShell().isRoot) {
+                Shell.cmd(Starter.internalCommand).exec()
+                Log.i(TAG, "Auto-restart via root: command sent")
+            } else {
+                Log.w(TAG, "Auto-restart via root: no root access")
+            }
+        }.onFailure {
+            Log.e(TAG, "Auto-restart via root failed", it)
+        }
+    }
+
+    private suspend fun tryAdbRestart() {
+        val context = _restartContext ?: run {
+            Log.w(TAG, "Auto-restart via ADB: no context available")
+            return
+        }
+        runCatching {
+            val tcpPort = AxeronSettings.getTcpPort()
+            if (tcpPort > 0) {
+                AdbStarter.startAdbClient(context, tcpPort) {}
+                Log.i(TAG, "Auto-restart via ADB TCP: command sent to port $tcpPort")
+            } else {
+                Log.w(TAG, "Auto-restart via ADB: no TCP port configured")
+            }
+        }.onFailure {
+            Log.e(TAG, "Auto-restart via ADB failed", it)
+        }
+    }
+
     fun startRoot(result: (Int) -> Unit = {}) {
+        intentionalStop = false
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 if (tryActivate) return@launch result(ACTIVATE_PROCESS)
@@ -225,6 +309,7 @@ class ActivateViewModel : ViewModel() {
     fun startAdbWireless(
         context: Context, result: (AdbStateInfo) -> Unit = {}
     ) {
+        intentionalStop = false
         viewModelScope.launch(Dispatchers.IO) {
             if (AdbEnvironment.isWifiRequired() && !isWifiEnabled(context)) return@launch requestEnableWifi(context)
             if (tryActivate) return@launch result(AdbStateInfo.Process("Trying to activate"))
@@ -237,6 +322,7 @@ class ActivateViewModel : ViewModel() {
     fun startAdbTcp(
         context: Context, result: (AdbStateInfo) -> Unit = {}
     ) {
+        intentionalStop = false
         viewModelScope.launch(Dispatchers.IO) {
             if (tryActivate) return@launch result(AdbStateInfo.Process("Trying to activate"))
             setTryToActivate(true)

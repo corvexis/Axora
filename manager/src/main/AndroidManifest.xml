@@ -95,7 +95,7 @@
             android:excludeFromRecents="true"
             android:exported="true"
             android:taskAffinity=":toast"
-            android:theme="@style/Theme.Transparent.NoUI">
+            android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
                 <action android:name="AxManager.TOAST" />
                 <category android:name="android.intent.category.DEFAULT" />

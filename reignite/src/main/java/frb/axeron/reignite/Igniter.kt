@@ -220,35 +220,50 @@ object Igniter {
     // LINK BIN
     // ===============================
     private fun linkBin(bin: File) {
-        if (!bin.isDirectory) return
+        if (!bin.isDirectory) {
+            println(" - bin not a directory: ${bin.absolutePath}")
+            return
+        }
 
-        AXERONXBIN.mkdirs()
-        bin.listFiles()?.forEach { src ->
+        if (!AXERONXBIN.exists() && !AXERONXBIN.mkdirs()) {
+            println(" - Failed to create xbin dir: ${AXERONXBIN.absolutePath}")
+            return
+        }
+
+        val files = bin.listFiles()
+        if (files == null) {
+            println(" - Failed to list bin files: ${bin.absolutePath}")
+            return
+        }
+
+        files.forEach { src ->
             val dst = File(AXERONXBIN, src.name)
 
             try {
-                if (dst.exists()) {
-                    if (!dst.delete()) {
-                        println(" - Failed to remove: ${dst.absolutePath}")
-                    }
+                if (dst.exists() && !dst.delete()) {
+                    println(" - Failed to remove old symlink: ${dst.absolutePath}")
                 }
-                // buat symlink baru
                 Os.symlink(src.absolutePath, dst.absolutePath)
                 println(" - Linked : ${dst.absolutePath}")
-            } catch (_: ErrnoException) {
-                println(" - Failed Linking : ${src.absolutePath}")
+            } catch (e: Exception) {
+                println(" - Failed Linking : ${src.absolutePath} — ${e.message}")
             }
         }
     }
 
     private fun unlinkBin(bin: File) {
         if (!bin.exists()) return
-        bin.listFiles()?.forEach { src ->
+        val files = bin.listFiles() ?: return
+        files.forEach { src ->
             val dst = File(AXERONXBIN, src.name)
             if (!dst.exists()) return@forEach
-            if (Os.readlink(dst.absolutePath) == src.absolutePath) {
-                println(" - Unlinked : ${dst.absolutePath}")
-                File(AXERONXBIN, src.name).delete()
+            try {
+                if (Os.readlink(dst.absolutePath) == src.absolutePath) {
+                    println(" - Unlinked : ${dst.absolutePath}")
+                    dst.delete()
+                }
+            } catch (e: Exception) {
+                println(" - Failed to unlink : ${dst.absolutePath} — ${e.message}")
             }
         }
     }

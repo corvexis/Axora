@@ -14,14 +14,24 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.FormatColorFill
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,6 +51,10 @@ fun AppearanceSettings(
     onDarkModeChange: (Boolean) -> Unit,
     dynamicColorEnabled: Boolean,
     onDynamicColorChange: (Boolean) -> Unit,
+    systemFontEnabled: Boolean,
+    onSystemFontChange: (Boolean) -> Unit,
+    fontChoice: String,
+    onFontChoiceChange: (String) -> Unit,
     currentLanguageDisplay: String?,
     onLanguageClick: () -> Unit,
     onPaletteClick: () -> Unit,
@@ -68,7 +82,11 @@ fun AppearanceSettings(
     val colorPaletteSummary = stringResource(R.string.customize_color_palette)
     val showColorPalette = !dynamicColorEnabled && (matchCategory || shouldShow(searchText, colorPaletteTitle, colorPaletteSummary))
 
-    val showCategory = showLanguage || showAutoTheme || showDarkMode || showDynamicColor || showColorPalette
+    val systemFontTitle = stringResource(R.string.system_font)
+    val systemFontSummary = stringResource(R.string.system_font_desc)
+    val showSystemFont = matchCategory || shouldShow(searchText, systemFontTitle, systemFontSummary)
+
+    val showCategory = showLanguage || showAutoTheme || showDarkMode || showDynamicColor || showColorPalette || showSystemFont
     
     if (showCategory) {
         SettingsCategory(
@@ -132,6 +150,68 @@ fun AppearanceSettings(
                 )
             }
             
+            if (showSystemFont) {
+                SwitchItem(
+                    icon = Icons.Filled.FontDownload,
+                    title = systemFontTitle,
+                    summary = systemFontSummary,
+                    checked = systemFontEnabled,
+                    onCheckedChange = onSystemFontChange
+                )
+
+                if (!systemFontEnabled) {
+                    val fontOptions = listOf(
+                        "jetbrains_mono" to R.string.font_jetbrains_mono,
+                        "caskaydia_mono" to R.string.font_caskaydia_mono,
+                        "overpass" to R.string.font_overpass,
+                        "firacode" to R.string.font_firacode,
+                        "hurmit" to R.string.font_hurmit,
+                        "heavydata" to R.string.font_heavydata,
+                        "droid_sans_mono" to R.string.font_droid_sans_mono,
+                    )
+
+                    var expanded by remember { mutableStateOf(false) }
+                    val selectedLabel = fontOptions.firstOrNull { it.first == fontChoice }?.let { stringResource(it.second) }
+                        ?: stringResource(fontOptions[0].second)
+
+                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                        OutlinedTextField(
+                            value = selectedLabel,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.ArrowDropDown,
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                            singleLine = true
+                        )
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            fontOptions.forEach { (key, labelRes) ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(labelRes)) },
+                                    onClick = {
+                                        onFontChoiceChange(key)
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { expanded = !expanded }
+                        )
+                    }
+                }
+            }
+
             if (showColorPalette) {
                 androidx.compose.material3.ListItem(
                     headlineContent = { Text(colorPaletteTitle) },
