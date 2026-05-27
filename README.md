@@ -2,7 +2,7 @@
 
 > A minimalistic, optimized fork of [AxManager](https://github.com/fahrez182/AxManager) for efficient ADB/non-root Android device control with optional root support.
 
-**Axora** is a streamlined fork of [AxManager](https://github.com/fahrez182/AxManager), focused on delivering a lightweight, high-performance client for Android device management. It retains core ADB/non-root control capabilities while removing unnecessary bloat, prioritizing speed, simplicity, and resource efficiency.
+**Axora** is a streamlined fork of [AxManager](https://github.com/fahrez182/AxManager), focused on delivering a high-performance client for Android device management. It retains core ADB/non-root control capabilities while removing unnecessary bloat, prioritizing speed, simplicity, and resource efficiency.
 
 Unlike root-dependent managers such as KernelSU, Axora is designed **ADB/Non-Root first** — root access is fully supported but never required, ensuring compatibility with a wide range of devices.
 
