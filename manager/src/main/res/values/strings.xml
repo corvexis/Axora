@@ -166,6 +166,8 @@
     <string name="shell_restriction_desc">This feature will restrict background processing.</string>
     <string name="compat_mode">Compatibility Mode</string>
     <string name="compat_mode_desc">You will use busybox to prevent unsupported command.</string>
+    <string name="clear_command">Clear Command</string>
+    <string name="clear_command_desc">Clear the command input after execution</string>
     <string name="axeron_permission">AX-Permission Intercept</string>
     <string name="axeron_permission_desc">Intercept permission manager built on Shizuku-API using Ax-Environment</string>
     <string name="tcp_mode">TCP Mode</string>
@@ -234,6 +236,7 @@
     <string name="preset_sky_blue">Sky Blue</string>
     <string name="preset_crimson_red">Crimson Red</string>
     <string name="preset_sunset_orange">Sunset Orange</string>
+    <string name="select_font">Select Font</string>
     <string name="system_font">System Font</string>
     <string name="system_font_desc">Use system default font instead of monospace</string>
     <string name="font_jetbrains_mono">JetBrains Mono (Default)</string>

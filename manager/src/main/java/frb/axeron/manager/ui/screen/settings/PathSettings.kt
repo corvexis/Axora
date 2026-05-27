@@ -44,8 +44,7 @@ fun PathSettings(
         
         SettingsCategory(
             icon = Icons.Filled.FolderDelete,
-            title = categoryTitle,
-            isSearching = searchText.isNotEmpty()
+            title = categoryTitle
         ) {
             if (showResetPath) {
                 ClickableItem(

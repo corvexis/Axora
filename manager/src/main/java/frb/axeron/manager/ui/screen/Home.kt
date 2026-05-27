@@ -218,13 +218,17 @@ fun HomeScreenOriginal(navigator: DestinationsNavigator, viewModelGlobal: ViewMo
             )
         },
         floatingActionButton = {
-            AnimatedVisibility(visible = isRunning) {
-                FloatingActionButton(
-                    onClick = {
-                        navigator.navigate(QuickShellScreenDestination)
+            Box(
+                modifier = Modifier.padding(bottom = 26.dp, end = 16.dp)
+            ) {
+                AnimatedVisibility(visible = isRunning) {
+                    FloatingActionButton(
+                        onClick = {
+                            navigator.navigate(QuickShellScreenDestination)
+                        }
+                    ) {
+                        Icon(Icons.Filled.Terminal, null)
                     }
-                ) {
-                    Icon(Icons.Filled.Terminal, null)
                 }
             }
         }

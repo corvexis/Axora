@@ -30,7 +30,8 @@
 #define EXIT_FATAL_KILL 9
 #define EXIT_FATAL_BINDER_BLOCKED_BY_SELINUX 10
 
-#define PACKAGE_NAME "frb.axeron.manager"
+#define PACKAGE_NAME "dev.axora.manager"
+#define PACKAGE_NAME_OLD "frb.axeron.manager"
 #define SERVER_NAME "axeron_server"
 #define SERVER_CLASS_PATH "frb.axeron.server.AxeronService"
 
@@ -268,7 +269,24 @@ int main(int argc, char *argv[]) {
     }
 
     if (apk_path.empty()) {
+        auto f = popen("pm path " PACKAGE_NAME_OLD, "r");
+        if (f) {
+            char line[PATH_MAX]{0};
+            fgets(line, PATH_MAX, f);
+            trim(line);
+            if (strstr(line, "package:") == line) {
+                apk_path = line + strlen("package:");
+            }
+            pclose(f);
+        }
+    }
+
+    if (apk_path.empty()) {
         perrorf("fatal: can't get path of manager\n");
+        perrorf("debug: argv received:");
+        for (int i = 0; i < argc; ++i) {
+            perrorf("  argv[%d]=%s", i, argv[i]);
+        }
         exit(EXIT_FATAL_PM_PATH);
     }
 

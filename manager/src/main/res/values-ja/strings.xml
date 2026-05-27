@@ -162,6 +162,8 @@
     <string name="shell_restriction_desc">有効にすると、コマンドのバックグラウンド実行が制限されます</string>
     <string name="compat_mode">Busybox互換モード</string>
     <string name="compat_mode_desc">有効にすると、サポートされていないコマンドをブロックするためにBusyboxを使用します</string>
+    <string name="clear_command">Clear Command</string>
+    <string name="clear_command_desc">Clear the command input after execution</string>
     <string name="axeron_permission">AX権限管理</string>
     <string name="axeron_permission_desc">Shizuku-APIベースのAx-Environmentを使用して権限要求を管理</string>
     <string name="tcp_mode">ワイヤレスデバッグモード</string>

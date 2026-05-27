@@ -528,6 +528,34 @@ open class AxeronService :
         return RemoteProcessHolder(process, token)
     }
 
+    override fun newProcessDetached(
+        cmd: Array<out String?>?,
+        env: Array<out String?>?,
+        dir: String?
+    ): IRemoteProcess {
+        enforceCallingPermission("newProcess")
+
+        LOGGER.d(
+            "newProcessDetached: uid=%d, cmd=%s",
+            getCallingUid(),
+            cmd.contentToString()
+        )
+
+        val pool = ProcessPoolManager.getInstance()
+        pool.acquireProcessBlocking("newProcessDetached/${cmd?.contentToString()}")
+
+        val process: Process?
+        try {
+            process = Runtime.getRuntime().exec(cmd, env, if (dir != null) File(dir) else null)
+        } catch (e: IOException) {
+            pool.cancelAcquire()
+            throw IllegalStateException(e.message)
+        }
+
+        pool.registerProcess(process, 0)
+        return RemoteProcessHolder(process, null)
+    }
+
     override fun getServerInfo(): ServerInfo {
         return ServerInfo(
             VERSION_NAME,

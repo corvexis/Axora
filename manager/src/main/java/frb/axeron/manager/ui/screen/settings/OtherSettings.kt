@@ -70,8 +70,7 @@ fun OtherSettings(
     if (showCategory) {
         SettingsCategory(
             icon = Icons.Filled.MoreHoriz,
-            title = categoryTitle,
-            isSearching = searchText.isNotEmpty()
+            title = categoryTitle
         ) {
             if (showSettingsEditor) {
                 ClickableItem(

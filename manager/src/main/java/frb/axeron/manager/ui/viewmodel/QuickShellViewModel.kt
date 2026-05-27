@@ -5,11 +5,14 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import frb.axeron.api.Axeron
 import frb.axeron.api.AxeronCommandSession
 import frb.axeron.api.core.AxeronSettings
@@ -34,7 +37,7 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
                 } else append(OutputType.TYPE_COMMAND, "[command] ${command.trim()}")
                 append(OutputType.TYPE_START, "[start] pid=$pid")
                 savedCommand = TextFieldValue(text = command, selection = TextRange(command.length))
-                commandText = TextFieldValue("") // clear input
+                if (isClearCommandEnabled) commandText = TextFieldValue("") // clear input
                 execMode = "Inputs"
                 isRunning = true
             }
@@ -43,7 +46,7 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
                 Log.i("QuickShellViewModel", "onProcessRunning: $input")
                 val tagInput = if (input.lines().size > 1) "[input]\n" else "[input] "
                 append(OutputType.TYPE_STDIN, tagInput + input.trim())
-                commandText = TextFieldValue("")
+                if (isClearCommandEnabled) commandText = TextFieldValue("")
             }
 
             override fun onProcessFinished(exitCode: Int, lastOutput: String) {
@@ -53,7 +56,7 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
                     append(OutputType.TYPE_SPACE, "")
                 }
                 execMode = "Commands"
-                if (savedCommand != null) {
+                if (!isClearCommandEnabled && savedCommand != null) {
                     commandText = savedCommand!!
                     savedCommand = null
                 }
@@ -79,15 +82,30 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
 
     private val prefs = AxeronSettings.getPreferences()
 
-    enum class OutputType(val labelId: Int) {
+    enum class OutputType(
+        val labelId: Int,
+        val color: Color? = null
+    ) {
         TYPE_COMMAND(R.string.type_command),
-        TYPE_START(R.string.type_start),
+        TYPE_START(
+            R.string.type_start,
+            Color(0xFF00FFFF)
+        ),
         TYPE_STDIN(R.string.type_stdin),
         TYPE_STDOUT(R.string.type_stdout),
-        TYPE_STDERR(R.string.type_stderr),
-        TYPE_THROW(R.string.type_throw),
+        TYPE_STDERR(
+            R.string.type_stderr,
+            Color(0xFFEF4444)
+        ),
+        TYPE_THROW(
+            R.string.type_throw,
+            Color(0xFFEF4444)
+        ),
         TYPE_SPACE(R.string.type_space),
-        TYPE_EXIT(R.string.type_exit)
+        TYPE_EXIT(
+            R.string.type_exit,
+            Color(0xFFF59E0B)
+        )
     }
 
     enum class KeyEventType(val labelId: Int) {
@@ -121,6 +139,17 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    var isClearCommandEnabled: Boolean by mutableStateOf(
+        prefs.getBoolean("clear_command", true)
+    )
+        private set
+
+    fun setClearCommand(enable: Boolean) {
+        isClearCommandEnabled = enable
+        prefs.edit {
+            putBoolean("clear_command", enable)
+        }
+    }
 
     private val _output = MutableSharedFlow<Output>(extraBufferCapacity = 64)
     val output: SharedFlow<Output> = _output
@@ -136,6 +165,37 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
 
     var execMode by mutableStateOf("Commands")
         private set
+
+    private var savedCommandsList by mutableStateOf(loadSavedCommands())
+    val savedCommands: List<String> get() = savedCommandsList
+
+    private fun loadSavedCommands(): MutableList<String> {
+        val json = prefs.getString("saved_commands", null) ?: return mutableListOf()
+        return try {
+            Gson().fromJson(json, object : TypeToken<MutableList<String>>() {}.type)
+        } catch (_: Exception) { mutableListOf() }
+    }
+
+    private fun persistSavedCommands() {
+        prefs.edit { putString("saved_commands", Gson().toJson(savedCommandsList)) }
+    }
+
+    fun saveCurrentCommand() {
+        val trimmed = commandText.text.trim()
+        if (trimmed.isEmpty() || trimmed in savedCommandsList) return
+        savedCommandsList = (savedCommandsList + trimmed).toMutableList()
+        persistSavedCommands()
+    }
+
+    fun removeSavedCommand(index: Int) {
+        savedCommandsList = savedCommandsList.toMutableList().apply { removeAt(index) }
+        persistSavedCommands()
+    }
+
+    fun loadSavedCommand(index: Int) {
+        val cmd = savedCommandsList.getOrNull(index) ?: return
+        commandText = TextFieldValue(text = cmd, selection = TextRange(cmd.length))
+    }
 
     fun setCommand(text: TextFieldValue) {
         commandText = text

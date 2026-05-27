@@ -48,8 +48,7 @@ fun ActivationSettings(
     if (showCategory) {
         SettingsCategory(
             icon = Icons.Filled.RestartAlt,
-            title = categoryTitle,
-            isSearching = searchText.isNotEmpty()
+            title = categoryTitle
         ) {
             if (showShizuku) {
                 SwitchItem(

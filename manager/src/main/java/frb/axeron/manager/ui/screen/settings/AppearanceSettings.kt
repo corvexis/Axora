@@ -4,7 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,20 +13,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.FormatColorFill
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +45,7 @@ import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.SettingsCategory
 import frb.axeron.manager.ui.component.SwitchItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppearanceSettings(
     searchText: String,
@@ -91,8 +95,7 @@ fun AppearanceSettings(
     if (showCategory) {
         SettingsCategory(
             icon = Icons.Filled.Palette,
-            title = categoryTitle,
-            isSearching = searchText.isNotEmpty()
+            title = categoryTitle
         ) {
             if (showLanguage) {
                 androidx.compose.material3.ListItem(
@@ -170,44 +173,58 @@ fun AppearanceSettings(
                         "droid_sans_mono" to R.string.font_droid_sans_mono,
                     )
 
-                    var expanded by remember { mutableStateOf(false) }
                     val selectedLabel = fontOptions.firstOrNull { it.first == fontChoice }?.let { stringResource(it.second) }
                         ?: stringResource(fontOptions[0].second)
+                    var showFontPicker by remember { mutableStateOf(false) }
 
-                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                        OutlinedTextField(
-                            value = selectedLabel,
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.ArrowDropDown,
-                                    contentDescription = null
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            textStyle = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                            singleLine = true
-                        )
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
+                    ListItem(
+                        headlineContent = { Text(selectedLabel) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        modifier = Modifier
+                            .clickable { showFontPicker = true }
+                            .padding(horizontal = 8.dp)
+                    )
+
+                    if (showFontPicker) {
+                        ModalBottomSheet(
+                            onDismissRequest = { showFontPicker = false },
+                            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
                         ) {
-                            fontOptions.forEach { (key, labelRes) ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(labelRes)) },
-                                    onClick = {
-                                        onFontChoiceChange(key)
-                                        expanded = false
-                                    }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 32.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.select_font),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
                                 )
+                                fontOptions.forEach { (key, labelRes) ->
+                                    ListItem(
+                                        headlineContent = { Text(stringResource(labelRes)) },
+                                        leadingContent = {
+                                            RadioButton(
+                                                selected = key == fontChoice,
+                                                onClick = {
+                                                    onFontChoiceChange(key)
+                                                    showFontPicker = false
+                                                }
+                                            )
+                                        },
+                                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                                        modifier = Modifier
+                                            .clickable {
+                                                onFontChoiceChange(key)
+                                                showFontPicker = false
+                                            }
+                                            .padding(horizontal = 8.dp)
+                                    )
+                                }
                             }
                         }
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable { expanded = !expanded }
-                        )
                     }
                 }
             }
@@ -245,14 +262,22 @@ fun AppearanceSettings(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
-                ) {
-                    ColorPresetItem("#00E5FF", R.string.preset_electric_cyan, currentColorHex, onPresetSelected)
-                    ColorPresetItem("#FFB487", R.string.preset_original_orange, currentColorHex, onPresetSelected)
-                    ColorPresetItem("#39FF14", R.string.preset_neon_green, currentColorHex, onPresetSelected)
-                }
+                    FlowRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ColorPresetItem("#00E5FF", R.string.preset_electric_cyan, currentColorHex, onPresetSelected)
+                        ColorPresetItem("#FFB487", R.string.preset_original_orange, currentColorHex, onPresetSelected)
+                        ColorPresetItem("#39FF14", R.string.preset_neon_green, currentColorHex, onPresetSelected)
+                        ColorPresetItem("#FF1493", R.string.preset_hot_pink, currentColorHex, onPresetSelected)
+                        ColorPresetItem("#BB86FC", R.string.preset_royal_purple, currentColorHex, onPresetSelected)
+                        ColorPresetItem("#03DAC6", R.string.preset_sky_blue, currentColorHex, onPresetSelected)
+                        ColorPresetItem("#CF6679", R.string.preset_crimson_red, currentColorHex, onPresetSelected)
+                        ColorPresetItem("#FF6D00", R.string.preset_sunset_orange, currentColorHex, onPresetSelected)
+                    }
 
             }
         }
@@ -269,9 +294,13 @@ fun ColorPresetItem(
     val color = androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hexColor))
     val isSelected = currentColorHex.equals(hexColor, ignoreCase = true)
 
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onPresetSelected(hexColor) }
+        modifier = Modifier.clickable(
+            interactionSource = interactionSource,
+            indication = null
+        ) { onPresetSelected(hexColor) }
     ) {
         Box(
             modifier = Modifier

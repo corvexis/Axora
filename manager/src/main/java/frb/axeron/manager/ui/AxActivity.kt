@@ -19,22 +19,26 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -76,6 +80,7 @@ import frb.axeron.manager.R
 import frb.axeron.manager.ui.navigation.BottomBarDestination
 import frb.axeron.manager.ui.screen.FlashIt
 import frb.axeron.manager.ui.theme.AxManagerTheme
+import frb.axeron.manager.ui.util.LocalBottomBarHidden
 import frb.axeron.manager.ui.util.LocalSnackbarHost
 import frb.axeron.manager.ui.util.LocaleHelper
 import frb.axeron.manager.ui.viewmodel.ActivateViewModel
@@ -229,21 +234,22 @@ class AxActivity : ComponentActivity() {
             else -> true
         }
 
+        val bottomBarHidden = remember { mutableStateOf(false) }
+
         val bottomBarRoutes = remember {
             BottomBarDestination.entries.map { it.direction.route }.toSet()
         }
 
         Box {
-            Scaffold(
-                contentWindowInsets = WindowInsets()
-            ) { innerPadding ->
-                CompositionLocalProvider(
-                    LocalSnackbarHost provides snackBarHostState,
-                ) {
+            CompositionLocalProvider(
+                LocalSnackbarHost provides snackBarHostState,
+                LocalBottomBarHidden provides bottomBarHidden,
+            ) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets()
+                ) { innerPadding ->
                     DestinationsNavHost(
-                        modifier = Modifier
-                            .padding(innerPadding)
-                            .padding(bottom = if (showBottomBar) 80.dp else 0.dp),
+                        modifier = Modifier.padding(innerPadding),
                         navGraph = NavGraphs.root,
                         navController = navController,
                         dependenciesContainerBuilder = {
@@ -252,21 +258,28 @@ class AxActivity : ComponentActivity() {
                         defaultTransitions = createNavTransitions(bottomBarRoutes)
                     )
                 }
-            }
 
-            AnimatedVisibility(
-                visible = showBottomBar,
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter)
-            ) {
-                BottomBar(
-                    navController,
-                    navigator,
-                    activateViewModel.axeronInfo,
-                    activateViewModel.isShizukuActive,
-                    pluginViewModel.pluginUpdateCount
-                )
+                AnimatedVisibility(
+                    visible = showBottomBar && !bottomBarHidden.value,
+                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        BottomBar(
+                            navController,
+                            navigator,
+                            activateViewModel.axeronInfo,
+                            activateViewModel.isShizukuActive,
+                            pluginViewModel.pluginUpdateCount
+                        )
+                    }
+                }
             }
         }
     }
@@ -354,16 +367,18 @@ class AxActivity : ComponentActivity() {
         isShizukuActive: Boolean,
         moduleUpdateCount: Int
     ) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ),
-            elevation = CardDefaults.cardElevation(0.dp),
-            shape = RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp)
+        Box(
+            modifier = Modifier
+                .wrapContentWidth()
+                .padding(bottom = 48.dp, start = 16.dp, end = 16.dp)
         ) {
-            NavigationBar(
-                containerColor = Color.Transparent,
-                tonalElevation = 0.dp
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 BottomBarDestination.entries
                     .forEach { destination ->
@@ -374,50 +389,52 @@ class AxActivity : ComponentActivity() {
                             destination.direction
                         )
                         val label = stringResource(id = destination.labelId)
-                        NavigationBarItem(
-                            selected = isCurrentDestOnBackStack,
-                            onClick = {
-                                if (isCurrentDestOnBackStack) {
-                                    navigator.popBackStack(destination.direction, false)
-                                }
-                                navigator.navigate(destination.direction) {
-                                    popUpTo(NavGraphs.root) {
-                                        saveState = true
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isCurrentDestOnBackStack)
+                                        MaterialTheme.colorScheme.secondaryContainer
+                                    else Color.Transparent
+                                )
+                                .clickable {
+                                    if (isCurrentDestOnBackStack) {
+                                        navigator.popBackStack(destination.direction, false)
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = {
-                                if (destination == BottomBarDestination.Plugin && moduleUpdateCount > 0) {
-                                    BadgedBox(badge = { Badge { Text(moduleUpdateCount.toString()) } }) {
-                                        if (isCurrentDestOnBackStack) {
-                                            Icon(
-                                                destination.iconSelected,
-                                                label
-                                            )
-                                        } else {
-                                            Icon(
-                                                destination.iconNotSelected,
-                                                label
-                                            )
+                                    navigator.navigate(destination.direction) {
+                                        popUpTo(NavGraphs.root) {
+                                            saveState = true
                                         }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                } else {
-                                    if (isCurrentDestOnBackStack) Icon(
-                                        imageVector = destination.iconSelected,
-                                        contentDescription = label
-                                    ) else Icon(
-                                        imageVector = destination.iconNotSelected,
-                                        contentDescription = label
+                                }
+                                .padding(12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (destination == BottomBarDestination.Plugin && moduleUpdateCount > 0) {
+                                BadgedBox(badge = { Badge { Text(moduleUpdateCount.toString()) } }) {
+                                    Icon(
+                                        imageVector = if (isCurrentDestOnBackStack) destination.iconSelected else destination.iconNotSelected,
+                                        contentDescription = label,
+                                        tint = if (isCurrentDestOnBackStack)
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
-                            },
-                            label = {
-                                Text(label)
-                            },
-                            alwaysShowLabel = false
-                        )
+                            } else {
+                                Icon(
+                                    imageVector = if (isCurrentDestOnBackStack) destination.iconSelected else destination.iconNotSelected,
+                                    contentDescription = label,
+                                    tint = if (isCurrentDestOnBackStack)
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
                     }
             }
         }

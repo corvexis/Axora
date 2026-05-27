@@ -162,6 +162,8 @@
     <string name="shell_restriction_desc">開啟後將限制指令在後台執行</string>
     <string name="compat_mode">Busybox 相容模式</string>
     <string name="compat_mode_desc">開啟後將使用 Busybox 來攔截不支援的指令。</string>
+    <string name="clear_command">Clear Command</string>
+    <string name="clear_command_desc">Clear the command input after execution</string>
     <string name="axeron_permission">AX-權限接管</string>
     <string name="axeron_permission_desc">使用基於 Shizuku-API 建構的 Ax-Environment 接管授權請求</string>
     <string name="tcp_mode">無線除錯模式</string>

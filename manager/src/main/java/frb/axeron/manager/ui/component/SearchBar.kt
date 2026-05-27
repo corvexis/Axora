@@ -22,6 +22,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -56,6 +58,7 @@ fun SearchAppBar(
     onBackClick: (() -> Unit)? = null,
     onConfirm: (() -> Unit)? = null,
     action: @Composable (() -> Unit)? = null,
+    colors: TopAppBarColors = TopAppBarDefaults.topAppBarColors(),
     scrollBehavior: TopAppBarScrollBehavior? = null
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -72,6 +75,7 @@ fun SearchAppBar(
     }
 
     TopAppBar(
+        colors = colors,
         title = {
             Box {
                 AnimatedVisibility(

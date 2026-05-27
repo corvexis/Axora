@@ -44,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -55,6 +54,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.snapshotFlow
+import frb.axeron.manager.ui.util.LocalBottomBarHidden
 
 import frb.axeron.api.core.AxeronSettings
 import androidx.lifecycle.compose.rememberLifecycleOwner
@@ -105,6 +106,24 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
     val currentColor = hexToColor(settings.customPrimaryColorHex)
 
     val lifecycleOwner = rememberLifecycleOwner()
+    val bottomBarHidden = LocalBottomBarHidden.current
+    val scrollState = rememberScrollState()
+
+    LaunchedEffect(scrollState) {
+        var lastOffset = scrollState.value
+        snapshotFlow { scrollState.value }
+            .collect { currentOffset ->
+                val isScrollingDown = currentOffset > lastOffset + 4
+                val isScrollingUp = currentOffset < lastOffset - 4
+
+                when {
+                    isScrollingDown && !bottomBarHidden.value -> bottomBarHidden.value = true
+                    isScrollingUp && bottomBarHidden.value -> bottomBarHidden.value = false
+                }
+
+                lastOffset = currentOffset
+            }
+    }
 
     DeveloperInfo(
         showDevDialog
@@ -146,7 +165,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -268,12 +287,12 @@ fun DeveloperInfo(
                         .size(110.dp)
                         .shadow(8.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(Color(0xFF303030)),
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                     contentAlignment = Alignment.Center
                     ) {
                     AsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data("https://cdn.corenexis.com/files/c/5478177720.jpg")
+                            .data("https://raw.githubusercontent.com/corvexis/Axora/refs/heads/main/1772024051-1deb23ed.jpg")
                             .crossfade(true)
                             .build(),
                         contentDescription = "Developer Profile Picture",
@@ -281,7 +300,7 @@ fun DeveloperInfo(
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(CircleShape)
-                            .background(Color(0xFF303030))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     )
                 }
 

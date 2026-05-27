@@ -269,8 +269,6 @@ fun PluginItem(
                         val reigniteLoading = rememberLoadingDialog()
                         val scope = rememberCoroutineScope()
 
-                        val pluginVersion = stringResource(R.string.plugin_version)
-                        val pluginAuthor = stringResource(R.string.plugin_author)
                         val pluginId = stringResource(R.string.plugin_id)
                         val pluginVersionCode = stringResource(R.string.plugin_version_code)
                         val pluginAxeronSupport = stringResource(R.string.plugin_axeron_support)
@@ -371,25 +369,14 @@ fun PluginItem(
 
                             Text(
                                 text = plugin.prop.name,
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
+                                fontSize = 16.sp,
                             )
 
                             Text(
-                                text = "$pluginVersion: ${plugin.prop.version}",
-                                fontSize = 11.sp,
-                                lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            Text(
-                                text = "$pluginAuthor: ${plugin.prop.author}",
-                                fontSize = 11.sp,
-                                lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
+                                text = "${plugin.prop.version} · by ${plugin.prop.author}",
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
@@ -401,33 +388,25 @@ fun PluginItem(
                                 Column {
                                     Text(
                                         text = "$pluginId: ${plugin.prop.id}",
-                                        fontSize = 9.sp,
-                                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
 
                                     Text(
                                         text = "$pluginVersionCode: ${plugin.prop.versionCode}",
-                                        fontSize = 9.sp,
-                                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
 
                                     Text(
                                         text = "$pluginAxeronSupport: ${plugin.prop.axeronPlugin}",
-                                        fontSize = 9.sp,
-                                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
 
                                     Text(
                                         text = if (plugin.prop.updateJson.isNotEmpty()) "$pluginUpdateJson: ${plugin.prop.updateJson}" else "$pluginUpdateJson: $pluginUpdateJsonEmpty",
-                                        fontSize = 9.sp,
-                                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.labelSmall.fontFamily,
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }

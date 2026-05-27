@@ -8,6 +8,11 @@ import android.os.Parcelable
 import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +34,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -36,6 +42,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -84,6 +91,7 @@ import frb.axeron.api.utils.AnsiFilter
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.AxSnackBarHost
 import frb.axeron.manager.ui.component.KeyEventBlocker
+import frb.axeron.manager.ui.component.TonalCard
 import frb.axeron.manager.ui.component.rememberLoadingDialog
 import frb.axeron.manager.ui.component.resolveDisplayName
 import frb.axeron.manager.ui.theme.GREEN
@@ -323,6 +331,7 @@ fun FlashScreen(
     var hasFlashed by rememberSaveable { mutableStateOf(false) }
 
     val errorSaveLog = stringResource(R.string.log_error_code)
+    var flashResult by remember { mutableStateOf<AxeronPluginService.FlashResult?>(null) }
 
     LaunchedEffect(pendingFlashIt) {
         Log.d("FlashScreen", "flashing: $flashing")
@@ -352,6 +361,7 @@ fun FlashScreen(
 
             // After the background task is done, switch to the main thread to update the final state
             withContext(Dispatchers.Main) {
+                flashResult = result.takeIf { it.code != 0 }
                 var finalLogText = ""
                 if (result.code != 0) {
                     finalLogText += errorSaveLog.format(result.code, result.err)
@@ -477,6 +487,17 @@ fun FlashScreen(
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(scrollState),
         ) {
+            if (flashing == FlashingStatus.FLASHING) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
+            if (flashing == FlashingStatus.FAILED && flashResult != null) {
+                FlashErrorCard(
+                    result = flashResult!!,
+                    onDismiss = { flashResult = null }
+                )
+            }
+
             LaunchedEffect(text) {
                 scrollState.animateScrollTo(scrollState.maxValue)
             }
@@ -550,14 +571,16 @@ private fun TopBar(
                 },
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = when (status) {
-                    FlashingStatus.FLASHING -> ORANGE
-                    FlashingStatus.SUCCESS -> GREEN
-                    FlashingStatus.FAILED -> RED
-                    else -> {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                }
+                color = animateColorAsState(
+                    targetValue = when (status) {
+                        FlashingStatus.FLASHING -> ORANGE
+                        FlashingStatus.SUCCESS -> GREEN
+                        FlashingStatus.FAILED -> RED
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    animationSpec = tween(600),
+                    label = "statusColor"
+                ).value
             )
         },
         navigationIcon = {
@@ -579,4 +602,95 @@ private fun TopBar(
         },
         scrollBehavior = scrollBehavior
     )
+}
+
+private fun flashErrorExplanation(code: Int): String {
+    return when (code) {
+        143 -> "The flash process was killed (SIGTERM) after 5 minutes.\nThis is a pool timeout — flash processes are now detached and immune."
+        else -> "The flash process exited with code $code."
+    }
+}
+
+@Composable
+private fun FlashErrorCard(
+    result: AxeronPluginService.FlashResult,
+    onDismiss: () -> Unit
+) {
+    var showDetails by remember { mutableStateOf(false) }
+
+    TonalCard(containerColor = MaterialTheme.colorScheme.errorContainer) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "Flash failed",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Text(
+                        text = "Exit code: ${result.code}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                    )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "Dismiss",
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = flashErrorExplanation(result.code),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+
+            if (result.err.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                TextButton(
+                    onClick = { showDetails = !showDetails }
+                ) {
+                    Text(
+                        text = if (showDetails) "Hide details" else "Show details",
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+                AnimatedVisibility(visible = showDetails) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                                MaterialTheme.shapes.small
+                            )
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = result.err,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = FontFamily.Monospace
+                            ),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

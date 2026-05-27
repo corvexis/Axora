@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -66,6 +67,7 @@ import frb.axeron.manager.ui.component.SearchAppBar
 import frb.axeron.manager.ui.component.SettingsItem
 import frb.axeron.manager.ui.component.rememberLoadingDialog
 import frb.axeron.manager.ui.screen.FlashIt
+import frb.axeron.manager.ui.util.LocalBottomBarHidden
 import frb.axeron.manager.ui.util.LocalSnackbarHost
 import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.SettingsViewModel
@@ -93,6 +95,7 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
 
     val listState = rememberLazyListState()
     var showFab by remember { mutableStateOf(true) }
+    val bottomBarHidden = LocalBottomBarHidden.current
 
     LaunchedEffect(listState) {
         var lastIndex = listState.firstVisibleItemIndex
@@ -108,6 +111,11 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
                 when {
                     isScrollingDown && showFab -> showFab = false
                     isScrollingUp && !showFab -> showFab = true
+                }
+
+                when {
+                    isScrollingDown && !bottomBarHidden.value -> bottomBarHidden.value = true
+                    isScrollingUp && bottomBarHidden.value -> bottomBarHidden.value = false
                 }
 
                 lastIndex = currIndex
@@ -132,6 +140,7 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
     Scaffold(
         topBar = {
             SearchAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                 title = {
                     Text(
                         text = stringResource(R.string.plugin),
@@ -156,11 +165,14 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
             )
         },
         floatingActionButton = {
-            AnimatedVisibility(
-                visible = showFab,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+            Box(
+                modifier = Modifier.padding(bottom = 26.dp, end = 16.dp)
             ) {
+                AnimatedVisibility(
+                    visible = showFab,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+                ) {
                 val selectZipLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
                 ) { result ->
@@ -250,6 +262,7 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
                         Icon(Icons.Filled.Add, null)
                     }
                 }
+            }
             }
         },
         snackbarHost = { AxSnackBarHost(hostState = snackBarHost) }

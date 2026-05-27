@@ -9,4 +9,4 @@ local.properties
 /manager/signing.properties
 /out
 /signing.properties
-demo
+demo.kotlin/

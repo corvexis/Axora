@@ -65,8 +65,7 @@ fun ConnectionSettings(
     if (showCategory) {
         SettingsCategory(
             icon = Icons.Filled.Adb,
-            title = categoryTitle,
-            isSearching = searchText.isNotEmpty()
+            title = categoryTitle
         ) {
             if (showTcpMode) {
                 SwitchItem(

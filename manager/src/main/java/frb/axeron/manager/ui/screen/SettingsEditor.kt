@@ -90,6 +90,7 @@ import frb.axeron.manager.ui.component.ConfirmResult
 import frb.axeron.manager.ui.component.SearchAppBar
 import frb.axeron.manager.ui.component.rememberConfirmDialog
 import frb.axeron.manager.ui.util.ClipboardUtil
+import frb.axeron.manager.ui.util.LocalBottomBarHidden
 import frb.axeron.manager.ui.viewmodel.ViewModelGlobal
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -117,6 +118,7 @@ fun SettingsEditorScreen(
 
     var query by remember { mutableStateOf("") }
     var showFab by remember { mutableStateOf(true) }
+    val bottomBarHidden = LocalBottomBarHidden.current
 
     val settingsRepository = remember(contentResolver) {
         SettingsRepository(contentResolver)
@@ -145,14 +147,15 @@ fun SettingsEditorScreen(
 
     /* ================= SYNC PAGER → TAB ================= */
 
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }
-            .distinctUntilChanged()
-            .collect { page ->
-                selectedType = settingTypes[page]
-                showFab = true
-            }
-    }
+        LaunchedEffect(pagerState) {
+            snapshotFlow { pagerState.currentPage }
+                .distinctUntilChanged()
+                .collect { page ->
+                    selectedType = settingTypes[page]
+                    showFab = true
+                    bottomBarHidden.value = false
+                }
+        }
 
     /* ================= REFRESH EVENT ================= */
 
@@ -202,8 +205,8 @@ fun SettingsEditorScreen(
 
             AnimatedVisibility(
                 visible = showFab,
-                enter = fadeIn() + slideInVertically { it },
-                exit = fadeOut() + slideOutVertically { it }
+                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
             ) {
                 FloatingActionButton(onClick = { isAdding = true }) {
                     Icon(Icons.Filled.Add, null)
@@ -229,6 +232,7 @@ fun SettingsEditorScreen(
                             pagerState.animateScrollToPage(target)
                         }
                         showFab = true
+                        bottomBarHidden.value = false
                     }
                 }
             )
@@ -283,6 +287,11 @@ fun SettingsEditorScreen(
                         when {
                             down && showFab -> showFab = false
                             up && !showFab -> showFab = true
+                        }
+
+                        when {
+                            down && !bottomBarHidden.value -> bottomBarHidden.value = true
+                            up && bottomBarHidden.value -> bottomBarHidden.value = false
                         }
 
                         lastIndex = i

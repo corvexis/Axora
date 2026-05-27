@@ -3,55 +3,98 @@ package frb.axeron.manager.ui.screen
 import android.os.Build
 import android.os.SystemClock
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.Android
+import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.Memory
+import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.surfaceColorAtElevation
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ActivateScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.QuickShellScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.PrivilegeScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import frb.axeron.api.Axeron
+import frb.axeron.api.AxeronCommandSession
+import frb.axeron.api.AxeronInfo
+import frb.axeron.shared.AxeronApiConstant
+import frb.axeron.api.AxeronPluginService
+import frb.axeron.api.core.Starter
+import frb.axeron.api.core.AxeronSettings
 import frb.axeron.manager.R
+import frb.axeron.manager.ui.component.AnimatedCounter
 import frb.axeron.manager.ui.component.ModeLabelText
-import frb.axeron.manager.ui.component.TonalCard
 import frb.axeron.manager.ui.component.PowerDialog
+import frb.axeron.manager.ui.component.TonalCard
 import frb.axeron.manager.ui.component.rememberLoadingDialog
 import frb.axeron.manager.ui.navigation.BottomBarDestination
-import frb.axeron.manager.ui.util.SystemUtils
 import frb.axeron.manager.ui.util.checkNewVersion
 import frb.axeron.manager.ui.util.openUpdateUrl
 import frb.axeron.manager.ui.viewmodel.ActivateViewModel
 import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.PrivilegeViewModel
-import frb.axeron.api.Axeron
-import frb.axeron.api.AxeronPluginService
-import frb.axeron.api.AxeronCommandSession
-import frb.axeron.api.core.Starter
-import frb.axeron.api.core.AxeronSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -68,169 +111,373 @@ fun HomeCircleScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = AxeronSettings.getPreferences()
     var showUpdateDialog by remember { mutableStateOf(false) }
+    var showPowerDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val loadingDialog = rememberLoadingDialog()
+
+    val status = activateViewModel.activateStatus
+    val isRunning = status is ActivateViewModel.ActivateStatus.Running
+    val axeronInfo = activateViewModel.axeronInfo
+
+    val enterAnimations = remember { mutableStateListOf(false, false, false, false) }
 
     LaunchedEffect(Unit) {
         if (prefs.getBoolean("auto_update_check", true)) {
             withContext(Dispatchers.IO) {
                 delay(2000)
                 val hasUpdate = checkNewVersion()
-                if (hasUpdate) {
-                    showUpdateDialog = true
-                }
+                if (hasUpdate) showUpdateDialog = true
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
         activateViewModel.setRestartContext(context)
+
+        delay(80)
+        enterAnimations[0] = true
+        delay(100)
+        enterAnimations[1] = true
+        delay(100)
+        enterAnimations[2] = true
+        delay(100)
+        enterAnimations[3] = true
     }
 
     if (showUpdateDialog) {
         frb.axeron.manager.ui.component.UpdateDialog(
             onDismiss = { showUpdateDialog = false },
-            onUpdate = {
-                showUpdateDialog = false
-                openUpdateUrl(context)
+            onUpdate = { showUpdateDialog = false; openUpdateUrl(context) }
+        )
+    }
+
+    if (showPowerDialog) {
+        PowerDialog(
+            onDismiss = { showPowerDialog = false },
+            onReignite = {
+                scope.launch {
+                    val success = loadingDialog.withLoading {
+                        AxeronPluginService.igniteSuspendService()
+                    }
+                    if (success) pluginViewModel.fetchModuleList()
+                }
+            },
+            onShutdown = {
+                activateViewModel.markIntentionalStop()
+                Axeron.destroy()
+            },
+            onRestart = {
+                activateViewModel.markIntentionalStop()
+                Axeron.newProcess(
+                    AxeronCommandSession.getQuickCmd(Starter.internalCommand, true, false),
+                    null, null
+                )
             }
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-                actions = {
-                    val loadingDialog = rememberLoadingDialog()
-                    val scope = rememberCoroutineScope()
-                    val isRunning = activateViewModel.activateStatus is ActivateViewModel.ActivateStatus.Running
-
-                    var showDialog by remember { mutableStateOf(false) }
-
-                    if (showDialog) {
-                        PowerDialog(
-                            onDismiss = { showDialog = false },
-                            onReignite = {
-                                scope.launch {
-                                    val success = loadingDialog.withLoading {
-                                        AxeronPluginService.igniteSuspendService()
-                                    }
-
-                                    if (success) {
-                                        pluginViewModel.fetchModuleList()
-                                    }
-                                }
-                            },
-                            onShutdown = {
-                                activateViewModel.markIntentionalStop()
-                                Axeron.destroy()
-                            },
-                            onRestart = {
-                                activateViewModel.markIntentionalStop()
-                                Axeron.newProcess(
-                                    AxeronCommandSession.getQuickCmd(
-                                        Starter.internalCommand,
-                                        true,
-                                        false
-                                    ),
-                                    null,
-                                    null
-                                )
-                            }
-                        )
-                    }
-
-                    AnimatedVisibility(visible = isRunning) {
-                        IconButton(
-                            modifier = Modifier.padding(end = 2.dp),
-                            onClick = { showDialog = true }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PowerSettingsNew,
-                                contentDescription = "Power"
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.padding(end = 12.dp))
-                }
-            )
-        },
-        floatingActionButton = {
-            val isRunning = activateViewModel.activateStatus is ActivateViewModel.ActivateStatus.Running
-            AnimatedVisibility(visible = isRunning) {
-                FloatingActionButton(
-                    onClick = {
-                        navigator.navigate(QuickShellScreenDestination)
-                    }
-                ) {
-                    Icon(Icons.Filled.Terminal, null)
-                }
-            }
-        }
-    ) { innerPadding ->
+    Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(Modifier.height(0.dp))
+            AxoraHeroHeader(
+                status = status,
+                axeronInfo = axeronInfo,
+                isShizukuActive = activateViewModel.isShizukuActive,
+                onPowerClick = { showPowerDialog = true },
+                onActivateClick = { navigator.navigate(ActivateScreenDestination) },
+                visible = enterAnimations[0]
+            )
 
-            StatusCardCircle(activateViewModel, navigator)
-
-            val isRunning = activateViewModel.activateStatus is ActivateViewModel.ActivateStatus.Running
             if (isRunning) {
-                LaunchedEffect(Unit) {
-                    pluginViewModel.fetchModuleList()
-                }
+                LaunchedEffect(Unit) { pluginViewModel.fetchModuleList() }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    PluginCountCard(
-                        Modifier.weight(1f),
-                        pluginViewModel,
-                        navigator
-                    )
-                    PrivilegeCountCard(
-                        Modifier.weight(1f),
-                        privilegeViewModel,
-                        navigator,
-                        activateViewModel.isShizukuActive
+                QuickActionsRow(
+                    visible = enterAnimations[1],
+                    onTerminalClick = { navigator.navigate(QuickShellScreenDestination) },
+                    onReigniteClick = {
+                        scope.launch {
+                            val success = loadingDialog.withLoading {
+                                AxeronPluginService.igniteSuspendService()
+                            }
+                            if (success) pluginViewModel.fetchModuleList()
+                        }
+                    }
+                )
+
+                AnimatedStatCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    label = stringResource(
+                        if (pluginViewModel.plugins.size <= 1) R.string.plugin
+                        else R.string.plugin_plural
+                    ),
+                    count = pluginViewModel.plugins.size,
+                    icon = Icons.Outlined.Extension,
+                    onClick = {
+                        navigator.navigate(BottomBarDestination.Plugin.direction) {
+                            popUpTo(NavGraphs.root) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    visible = enterAnimations[1]
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                if (activateViewModel.isShizukuActive) {
+                    AnimatedStatCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        label = stringResource(
+                            if (privilegeViewModel.privilegedCount <= 1) R.string.privilege
+                            else R.string.privilege_plural
+                        ),
+                        count = privilegeViewModel.privilegedCount,
+                        icon = Icons.Outlined.Security,
+                        enabled = true,
+                        onClick = {
+                            navigator.navigate(BottomBarDestination.Privilege.direction) {
+                                popUpTo(NavGraphs.root) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        visible = enterAnimations[1]
                     )
                 }
+            } else {
+                AnimatedStatCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                    label = stringResource(R.string.plugin_plural),
+                    count = 0,
+                    icon = Icons.Outlined.Extension,
+                    enabled = false,
+                    visible = enterAnimations[1]
+                )
             }
 
-            InfoCardCircle(activateViewModel)
+            Spacer(Modifier.height(16.dp))
 
-            LearnMoreCardCircle()
+            DeviceInfoSection(
+                axeronInfo = axeronInfo,
+                visible = enterAnimations[2]
+            )
 
-            Spacer(Modifier)
+            Spacer(Modifier.height(12.dp))
+
+            LearnMoreSection(visible = enterAnimations[3])
+
+            Spacer(Modifier.height(80.dp))
         }
     }
 }
 
 @Composable
-fun StatusCardCircle(
-    activateViewModel: ActivateViewModel,
-    navigator: DestinationsNavigator
+private fun AxoraHeroHeader(
+    status: ActivateViewModel.ActivateStatus,
+    axeronInfo: AxeronInfo,
+    isShizukuActive: Boolean,
+    onPowerClick: () -> Unit,
+    onActivateClick: () -> Unit,
+    visible: Boolean
 ) {
-    val axeronInfo = activateViewModel.axeronInfo
-    val status = activateViewModel.activateStatus
     val isRunning = status is ActivateViewModel.ActivateStatus.Running
+    val isUpdating = status is ActivateViewModel.ActivateStatus.Updating
+    val isNeedExtraStep = status is ActivateViewModel.ActivateStatus.NeedExtraStep
 
+    val heroColor = when {
+        isRunning -> MaterialTheme.colorScheme.secondaryContainer
+        isUpdating -> MaterialTheme.colorScheme.primaryContainer
+        isNeedExtraStep -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.errorContainer
+    }
+
+    val dotColor = when {
+        isRunning -> MaterialTheme.colorScheme.primary
+        isUpdating -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.error
+    }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(400)) + slideInVertically(
+            animationSpec = tween(400),
+            initialOffsetY = { -it / 3 }
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        0f to heroColor.copy(alpha = 0.35f),
+                        0.6f to heroColor.copy(alpha = 0.08f),
+                        1f to Color.Transparent
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 20.dp, bottom = 24.dp, start = 20.dp, end = 20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_thunderbolt),
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (isRunning) {
+                        IconButton(onClick = onPowerClick) {
+                            Icon(
+                                imageVector = Icons.Default.PowerSettingsNew,
+                                contentDescription = "Power",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                if (isRunning) {
+                    val infiniteTransition = rememberInfiniteTransition(label = "statusGlow")
+                    val glowScale by infiniteTransition.animateFloat(
+                        initialValue = 1f,
+                        targetValue = 1.4f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1200),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "glowScale"
+                    )
+                    val glowAlpha by infiniteTransition.animateFloat(
+                        initialValue = 0.3f,
+                        targetValue = 0.7f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1200),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "glowAlpha"
+                    )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Box(
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .scale(glowScale)
+                                    .background(dotColor.copy(alpha = glowAlpha), CircleShape)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(dotColor, CircleShape)
+                            )
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.home_running),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        ModeLabelText(
+                            label = axeronInfo.serverInfo.getMode().label,
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Text(
+                        text = "Version: ${axeronInfo.getVersionCode()}  |  PID: ${axeronInfo.serverInfo.pid}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    UptimeText(axeronInfo = axeronInfo)
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .background(dotColor, CircleShape)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = when {
+                                isUpdating -> stringResource(R.string.updating)
+                                isNeedExtraStep -> stringResource(R.string.home_need_fix)
+                                else -> stringResource(R.string.home_not_running)
+                            },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Text(
+                        text = when {
+                            isUpdating -> stringResource(R.string.server_updating_version,
+                                axeronInfo.getVersionCode(),
+                                AxeronApiConstant.server.VERSION_CODE)
+                            isNeedExtraStep -> stringResource(R.string.home_need_fix_msg)
+                            else -> stringResource(R.string.home_click_to_install)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    if (!isUpdating && !isNeedExtraStep) {
+                        Spacer(Modifier.height(16.dp))
+                        Button(
+                            onClick = onActivateClick,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(text = stringResource(R.string.activate))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UptimeText(axeronInfo: AxeronInfo) {
     var time by remember { mutableLongStateOf(0L) }
 
-    LaunchedEffect(isRunning) {
-        if (isRunning) {
-            while (true) {
-                time = SystemClock.elapsedRealtime() - axeronInfo.serverInfo.starting
-                delay(1000)
-            }
+    LaunchedEffect(Unit) {
+        while (true) {
+            time = SystemClock.elapsedRealtime() - axeronInfo.serverInfo.starting
+            delay(1000)
         }
     }
 
@@ -244,356 +491,297 @@ fun StatusCardCircle(
         return "T+${dayPart}%02d:%02d:%02d".format(hours, minutes, seconds)
     }
 
-    TonalCard(
-        containerColor = when (status) {
-            is ActivateViewModel.ActivateStatus.Running -> MaterialTheme.colorScheme.secondaryContainer
-            is ActivateViewModel.ActivateStatus.Updating -> MaterialTheme.colorScheme.primaryContainer
-            is ActivateViewModel.ActivateStatus.NeedExtraStep -> MaterialTheme.colorScheme.errorContainer
-            else -> MaterialTheme.colorScheme.errorContainer
-        }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    when (status) {
-                        is ActivateViewModel.ActivateStatus.Running -> {}
-                        else -> navigator.navigate(ActivateScreenDestination)
-                    }
-                }
-        ) {
-            if (isRunning) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .offset(x = 10.dp, y = 5.dp),
-                    contentAlignment = Alignment.CenterEnd
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_thunderbolt),
-                        modifier = Modifier.size(80.dp),
-                        contentDescription = null
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                                )
-                            )
-                        )
-                )
-            }
-
-            Row(
-                modifier = Modifier.padding(24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isRunning) {
-                    Icon(Icons.Outlined.CheckCircle, stringResource(R.string.home_running))
-                    Column(Modifier.padding(start = 20.dp)) {
-                        val modeLabel = axeronInfo.serverInfo.getMode().label
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = stringResource(R.string.home_running),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            ModeLabelText(label = modeLabel)
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "Version: ${axeronInfo.getVersionCode()} | Pid: ${axeronInfo.serverInfo.pid}",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp)
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = formatUptime(time),
-                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    when (status) {
-                        is ActivateViewModel.ActivateStatus.Updating -> {
-                            Icon(Icons.Outlined.SystemUpdate, stringResource(R.string.updating))
-                            Column(Modifier.padding(start = 20.dp)) {
-                                Text(
-                                    text = stringResource(R.string.updating),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.home_not_running_msg),
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
-                                )
-                            }
-                        }
-                        is ActivateViewModel.ActivateStatus.NeedExtraStep -> {
-                            Icon(Icons.Outlined.Build, stringResource(R.string.home_need_fix))
-                            Column(Modifier.padding(start = 20.dp)) {
-                                Text(
-                                    text = stringResource(R.string.home_need_fix),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.home_need_fix_msg),
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
-                                )
-                            }
-                        }
-                        else -> {
-                            Icon(Icons.Outlined.Warning, stringResource(R.string.home_not_running))
-                            Column(Modifier.padding(start = 20.dp)) {
-                                Text(
-                                    text = stringResource(R.string.home_not_running),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.home_click_to_install),
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    Text(
+        text = formatUptime(time),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable
-fun PluginCountCard(
-    modifier: Modifier,
-    pluginViewModel: PluginViewModel,
-    navigator: DestinationsNavigator
+private fun QuickActionsRow(
+    visible: Boolean,
+    onTerminalClick: () -> Unit,
+    onReigniteClick: () -> Unit
 ) {
-    val count = pluginViewModel.plugins.size
-
-    TonalCard(modifier = modifier) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    navigator.navigate(BottomBarDestination.Plugin.direction) {
-                        popUpTo(NavGraphs.root) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Extension,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = if (count <= 1) {
-                        stringResource(R.string.plugin)
-                    } else {
-                        stringResource(R.string.plugin_plural)
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = count.toString(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PrivilegeCountCard(
-    modifier: Modifier,
-    privilegeViewModel: PrivilegeViewModel,
-    navigator: DestinationsNavigator,
-    isShizukuActive: Boolean = false
-) {
-    val count = privilegeViewModel.privilegedCount
-    val cardColor = if (isShizukuActive) {
-        MaterialTheme.colorScheme.surfaceVariant
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    }
-
-    TonalCard(
-        modifier = modifier,
-        containerColor = cardColor
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(350)) + slideInVertically(
+            animationSpec = tween(350),
+            initialOffsetY = { it / 2 }
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(
-                    if (isShizukuActive) {
-                        Modifier.clickable {
-                            navigator.navigate(PrivilegeScreenDestination) {
-                                popUpTo(NavGraphs.root) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    } else {
-                        Modifier
-                    }
-                )
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Security,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = if (isShizukuActive) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                }
+            ActionChip(
+                icon = Icons.Filled.Terminal,
+                label = stringResource(R.string.quick_shell),
+                onClick = onTerminalClick
             )
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = if (count <= 1) {
-                        stringResource(R.string.privilege)
-                    } else {
-                        stringResource(R.string.privilege_plural)
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = if (isShizukuActive) {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    }
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = count.toString(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (isShizukuActive) {
-                        MaterialTheme.colorScheme.outline
-                    } else {
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                    }
-                )
-            }
+            ActionChip(
+                icon = Icons.Default.LocalFireDepartment,
+                label = stringResource(R.string.ignite),
+                onClick = onReigniteClick
+            )
         }
     }
 }
 
 @Composable
-fun InfoCardCircle(activateViewModel: ActivateViewModel) {
-    val axeronInfo = activateViewModel.axeronInfo
+private fun ActionChip(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    FilledTonalButton(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        content = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+    )
+}
 
-    TonalCard {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 24.dp)
+@Composable
+private fun AnimatedStatCard(
+    modifier: Modifier = Modifier,
+    label: String,
+    count: Int,
+    icon: ImageVector,
+    enabled: Boolean = true,
+    onClick: (() -> Unit)? = null,
+    visible: Boolean
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(400)) + slideInVertically(
+            animationSpec = tween(400),
+            initialOffsetY = { it / 2 }
+        )
+    ) {
+        val alpha = if (enabled) 1f else 0.5f
+        TonalCard(
+            modifier = modifier.then(
+                if (onClick != null && enabled) Modifier.clip(RoundedCornerShape(20.dp)).clickable { onClick() }
+                else Modifier
+            ),
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp).copy(alpha = alpha)
         ) {
-            @Composable
-            fun InfoCardItem(
-                label: String,
-                content: String,
-                icon: @Composable () -> Unit
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 18.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    icon()
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text(text = label, style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            text = content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline,
-                        )
-                    }
-                }
-            }
-
-            @Composable
-            fun InfoCardItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, content: String) = InfoCardItem(
-                label = label,
-                content = content,
-                icon = {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-            )
-
-            Spacer(Modifier.height(16.dp))
-            InfoCardItem(
-                icon = Icons.Outlined.Android,
-                label = stringResource(R.string.android_version),
-                content = "${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})"
-            )
-
-            Spacer(Modifier.height(16.dp))
-            InfoCardItem(
-                icon = Icons.Outlined.Memory,
-                label = stringResource(R.string.abi_supported),
-                content = SystemUtils.getSupportedABIs()
-            )
-
-            Spacer(Modifier.height(16.dp))
-            InfoCardItem(
-                icon = Icons.Outlined.Shield,
-                label = stringResource(R.string.home_selinux_status),
-                content = axeronInfo.serverInfo.selinuxContext
-            )
+                Spacer(Modifier.height(12.dp))
+                AnimatedCounter(
+                    count = count,
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                )
+            }
         }
     }
 }
 
 @Composable
-fun LearnMoreCardCircle() {
-    val uriHandler = LocalUriHandler.current
-
-    TonalCard {
-        Row(
+private fun DeviceInfoSection(
+    axeronInfo: AxeronInfo,
+    visible: Boolean
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(400)) + slideInVertically(
+            animationSpec = tween(400),
+            initialOffsetY = { it / 3 }
+        )
+    ) {
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    uriHandler.openUri("https://fahrez182.github.io/AxManager")
-                }
-                .padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 0.dp
         ) {
-            Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 20.dp)
+            ) {
                 Text(
-                    text = stringResource(R.string.learn_more),
-                    style = MaterialTheme.typography.titleSmall
+                    text = stringResource(R.string.axeron_environment),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.learn_more_msg),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline
+
+                Spacer(Modifier.height(16.dp))
+
+                InfoRow(
+                    icon = Icons.Outlined.Android,
+                    label = stringResource(R.string.android_version),
+                    value = "${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})"
+                )
+                Spacer(Modifier.height(14.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Memory,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        text = stringResource(R.string.abi_supported),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Build.SUPPORTED_ABIS.forEach { abi ->
+                            Text(
+                                text = abi,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+                InfoRow(
+                    icon = Icons.Outlined.Shield,
+                    label = stringResource(R.string.selinux_context),
+                    value = axeronInfo.serverInfo.selinuxContext
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(
+    icon: ImageVector,
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Medium
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun LearnMoreSection(visible: Boolean) {
+    val uriHandler = LocalUriHandler.current
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(400)) + slideInVertically(
+            animationSpec = tween(400),
+            initialOffsetY = { it / 3 }
+        )
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .clickable { uriHandler.openUri("https://fahrez182.github.io/AxManager") },
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 0.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.learn_more),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.learn_more_msg),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Icon(
+                    imageVector = Icons.Outlined.OpenInNew,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

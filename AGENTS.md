@@ -29,7 +29,6 @@ Axora — Android app (Kotlin + Compose, Material 3) for ADB/non-root device con
 - Local override: `api.useLocal=true` + `api.dir=<path>` in `local.properties`
 - **See `api/AGENTS.md`** — covers all submodule modules, AIDL source of truth, DEX extraction, publishing, ProcessPoolManager.
 - `api/manifest.gradle.kts` is the canonical source for version (defines `apiVersionMajor/Minor/Patch` → `api_version_code`).
-- Key modules: `:api` (public API, `Axeron.java` entry point), `:aidl` (AIDL IPC interfaces), `:shared` (constants/paths), `:server-shared` (server-side process pool, permissions), `:rish` (PTY terminal, native CMake), `:axerish` (asset/DEX extraction).
 
 ## Toolchain Quirks
 - Gradle 8.13, Kotlin 2.2.21, AGP 8.13.2, JDK 21, NDK 29.0.14206865
@@ -47,7 +46,7 @@ Building `:reignite` extracts `classes*.dex` to `manager/src/main/assets/scripts
 ## Version Scheme
 - Code: `api_version` from `gradle.properties` (currently `14800`) + git commit count via `git rev-list --count HEAD`
 - Name: `{api_version_name}.r{commit_count}` (e.g. `1.4.8.r355`)
-- `api/manifest.gradle.kts` is the canonical source for `api_version` computation (major*10000 + minor*1000 + patch)
+- `api/manifest.gradle.kts` is the canonical source for `api_version` computation (major\*10000 + minor\*1000 + patch)
 
 ## CI (GitHub Actions)
 - `deploy-website.yml` — Build & deploy VitePress site to GitHub Pages on `main` pushes modifying `website/**`
@@ -58,3 +57,6 @@ Building `:reignite` extracts `classes*.dex` to `manager/src/main/assets/scripts
 cd website && bun install && bun run dev   # Dev server at localhost
 cd website && bun run build                # Static build → website/docs/.vitepress/dist
 ```
+
+## Recent Feature Reference
+`recent_changes.md` documents the auto-restart on server death feature (ActivateViewModel + PowerDialog changes). Read it for context on server lifecycle handling.

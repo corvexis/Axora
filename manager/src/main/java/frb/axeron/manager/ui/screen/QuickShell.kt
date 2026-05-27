@@ -21,11 +21,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,11 +37,14 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ClearAll
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.DoNotTouch
+import androidx.compose.material.icons.outlined.Input
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Output
 import androidx.compose.material.icons.outlined.Save
@@ -82,6 +89,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
@@ -153,6 +161,7 @@ fun QuickShellScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewMode
     val snackBarHost = LocalSnackbarHost.current
 
     var showExtraDialog by remember { mutableStateOf(false) }
+    var showSavedCommands by remember { mutableStateOf(false) }
 
     ExtraSettings(
         showExtraDialog,
@@ -161,6 +170,15 @@ fun QuickShellScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewMode
         showExtraDialog = false
     }
 
+    if (showSavedCommands) {
+        SavedCommandsSheet(
+            viewModel = viewModel,
+            onDismiss = { showSavedCommands = false },
+            onLoadCommand = {
+                showSavedCommands = false
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -177,6 +195,13 @@ fun QuickShellScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewMode
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            showSavedCommands = true
+                        }
+                    ) {
+                        Icon(Icons.Outlined.Bookmark, contentDescription = "Saved commands")
+                    }
                     IconButton(
                         onClick = {
                             viewModel.stop()
@@ -387,15 +412,16 @@ fun QuickShellScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewMode
                             if (!PrefsEnumHelper<QuickShellViewModel.OutputType>("output_")
                                     .loadState(context, line.type, true)
                             ) return@items
+                            val lineColor = line.type.color ?: MaterialTheme.colorScheme.onSurfaceVariant
                             BasicText(
                                 text = line.output.parseAsAnsiAnnotatedString(),
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    lineHeight = MaterialTheme.typography.labelSmall.fontSize, // samain dengan fontSize
+                                    lineHeight = MaterialTheme.typography.labelSmall.fontSize,
                                     lineHeightStyle = LineHeightStyle(
                                         alignment = LineHeightStyle.Alignment.Center,
                                         trim = LineHeightStyle.Trim.Both
                                     ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = lineColor,
                                     fontFamily = FontFamily.Monospace
                                 ),
                                 softWrap = false,
@@ -468,6 +494,32 @@ fun QuickShellScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewMode
                                 )
                             )
                     )
+
+                    var justSaved by remember { mutableStateOf(false) }
+                    IconButton(
+                        onClick = {
+                            viewModel.saveCurrentCommand()
+                            justSaved = true
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 56.dp)
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Bookmark,
+                            contentDescription = "Save",
+                            modifier = Modifier.size(28.dp),
+                            tint = if (justSaved) MaterialTheme.colorScheme.primary
+                                   else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    LaunchedEffect(justSaved) {
+                        if (justSaved) {
+                            kotlinx.coroutines.delay(1500)
+                            justSaved = false
+                        }
+                    }
 
                     IconButton(
                         onClick = {
@@ -676,11 +728,93 @@ fun ExtraSettings(
                         onSwitchChange = { quickShellViewModel.setCompatMode(it) }
                     )
                 }
+
+                item {
+                    SettingsItem(
+                        iconVector = Icons.Outlined.Input,
+                        label = stringResource(R.string.clear_command),
+                        description = stringResource(R.string.clear_command_desc),
+                        checked = quickShellViewModel.isClearCommandEnabled,
+                        onSwitchChange = { quickShellViewModel.setClearCommand(it) }
+                    )
+                }
             }
         }
     }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SavedCommandsSheet(
+    viewModel: QuickShellViewModel,
+    onDismiss: () -> Unit,
+    onLoadCommand: () -> Unit
+) {
+    ModalBottomSheet(
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        onDismissRequest = onDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Saved Commands",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(12.dp))
+            if (viewModel.savedCommands.isEmpty()) {
+                Text(
+                    text = "No saved commands",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 24.dp)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 300.dp)
+                ) {
+                    itemsIndexed(viewModel.savedCommands) { index, cmd ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.loadSavedCommand(index)
+                                    onLoadCommand()
+                                }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = cmd,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            IconButton(
+                                onClick = { viewModel.removeSavedCommand(index) }
+                            ) {
+                                Icon(
+                                    Icons.Filled.Close,
+                                    contentDescription = "Remove",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 suspend fun saveLogsToDownload(
     context: Context,

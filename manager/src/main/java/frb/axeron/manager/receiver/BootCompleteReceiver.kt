@@ -14,6 +14,7 @@ import frb.axeron.api.core.AxeronSettings
 import frb.axeron.api.core.Starter
 import frb.axeron.manager.adb.AdbStarter
 import frb.axeron.manager.adb.AdbStateInfo
+import frb.axeron.manager.service.ServerHealthScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
@@ -44,11 +45,12 @@ class BootCompleteReceiver : BroadcastReceiver() {
         ) {
             val pending = goAsync()
             startAdb(context) {
+                ServerHealthScheduler.schedule(context)
                 safeFinish(pending)
             }
         } else if (AxeronSettings.getLastLaunchMode() == AxeronSettings.LaunchMethod.ROOT) {
             val pending = goAsync()
-            startRoot(pending)
+            startRoot(context, pending)
         } else {
             Log.w(TAG, "No support start on boot")
         }
@@ -56,7 +58,7 @@ class BootCompleteReceiver : BroadcastReceiver() {
         Log.d(TAG, "onReceive: ${intent.action}")
     }
 
-    private fun startRoot(pending: PendingResult) {
+    private fun startRoot(context: Context, pending: PendingResult) {
         if (!Shell.getShell().isRoot) {
             Shell.getCachedShell()?.close()
             safeFinish(pending)
@@ -64,6 +66,7 @@ class BootCompleteReceiver : BroadcastReceiver() {
         }
 
         Shell.cmd(Starter.internalCommand).exec()
+        ServerHealthScheduler.schedule(context)
         safeFinish(pending)
     }
 

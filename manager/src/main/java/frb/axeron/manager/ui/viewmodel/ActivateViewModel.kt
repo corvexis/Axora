@@ -23,7 +23,9 @@ import frb.axeron.api.Axeron
 import frb.axeron.api.AxeronCommandSession
 import frb.axeron.api.AxeronInfo
 import frb.axeron.api.core.AxeronSettings
+import frb.axeron.api.core.Engine
 import frb.axeron.api.core.Starter
+import frb.axeron.manager.service.ServerHealthScheduler
 import frb.axeron.manager.adb.AdbStarter
 import frb.axeron.manager.adb.AdbStarter.stopTcp
 import frb.axeron.manager.adb.AdbStateInfo
@@ -99,7 +101,6 @@ class ActivateViewModel : ViewModel() {
     // Auto-restart state
     private var autoRestartJob: Job? = null
     private var retryCount = 0
-    private var wasRunning = false
     var intentionalStop by mutableStateOf(false)
         private set
 
@@ -107,6 +108,8 @@ class ActivateViewModel : ViewModel() {
 
     fun markIntentionalStop() {
         intentionalStop = true
+        AxeronSettings.setWasRunning(false)
+        ServerHealthScheduler.cancel(Engine.application)
         autoRestartJob?.cancel()
     }
 
@@ -168,6 +171,11 @@ class ActivateViewModel : ViewModel() {
         }
         Axeron.addBinderReceivedListener(receivedListener)
         Axeron.addBinderDeadListener(deadListener)
+
+        if (!Axeron.pingBinder()) {
+            trySend(ActivateStatus.Disable)
+        }
+
         awaitClose {
             Axeron.removeBinderReceivedListener(receivedListener)
             Axeron.removeBinderDeadListener(deadListener)
@@ -182,10 +190,11 @@ class ActivateViewModel : ViewModel() {
 
                 when (status) {
                     is ActivateStatus.Running -> {
-                        wasRunning = true
+                        AxeronSettings.setWasRunning(true)
                         intentionalStop = false
                         retryCount = 0
                         autoRestartJob?.cancel()
+                        ServerHealthScheduler.schedule(Engine.application)
                         checkShizukuIntercept()
                         axeronInfo = status.axeronInfo
                     }
@@ -205,7 +214,7 @@ class ActivateViewModel : ViewModel() {
 
                 if (isStillUpdating) return@collect
 
-                if (status is ActivateStatus.Disable && wasRunning && !intentionalStop && AxeronSettings.getEnableAutoRestart()) {
+                if (status is ActivateStatus.Disable && AxeronSettings.getWasRunning() && !intentionalStop && AxeronSettings.getEnableAutoRestart()) {
                     launchAutoRestart()
                 }
 
