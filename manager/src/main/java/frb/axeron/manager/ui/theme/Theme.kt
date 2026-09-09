@@ -37,6 +37,11 @@ fun AxManagerTheme(
     val dynamicColor = settingsViewModel.isDynamicColorEnabled
     val customPrimaryColor =
         hexToColor(settingsViewModel.customPrimaryColorHex)
+    val customSecondaryColor = settingsViewModel.customSecondaryColorHex?.let { hexToColor(it) }
+    val customTertiaryColor = settingsViewModel.customTertiaryColorHex?.let { hexToColor(it) }
+    val accentIntensity = settingsViewModel.accentIntensity
+    val isAmoled = settingsViewModel.isAmoledEnabled
+    val cornerStyle = settingsViewModel.cornerStyle
 
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -47,12 +52,24 @@ fun AxManagerTheme(
             }
         }
 
-        darkTheme -> getVortexDarkColorScheme(customPrimaryColor)
-        else -> getVortexLightColorScheme(customPrimaryColor)
+        darkTheme -> getVortexDarkColorScheme(
+            customColor = customPrimaryColor,
+            secondaryOverride = customSecondaryColor,
+            tertiaryOverride = customTertiaryColor,
+            intensity = accentIntensity,
+            amoled = isAmoled
+        )
+        else -> getVortexLightColorScheme(
+            customColor = customPrimaryColor,
+            secondaryOverride = customSecondaryColor,
+            tertiaryOverride = customTertiaryColor,
+            intensity = accentIntensity
+        )
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
+        shapes = getAppShapes(cornerStyle),
         typography = if (settingsViewModel.isSystemFontEnabled) SystemTypography
         else fontTypographyMap[settingsViewModel.fontChoice] ?: fontTypographyMap["jetbrains_mono"]!!
     ) {

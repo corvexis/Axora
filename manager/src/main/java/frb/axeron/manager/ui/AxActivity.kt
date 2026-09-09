@@ -85,6 +85,7 @@ import frb.axeron.manager.ui.util.LocalSnackbarHost
 import frb.axeron.manager.ui.util.LocaleHelper
 import frb.axeron.manager.ui.viewmodel.ActivateViewModel
 import frb.axeron.manager.ui.viewmodel.AppsViewModel
+import frb.axeron.manager.ui.viewmodel.DisableAppsViewModel
 import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.PrivilegeViewModel
 import frb.axeron.manager.ui.viewmodel.SettingsViewModel
@@ -153,6 +154,7 @@ class AxActivity : ComponentActivity() {
         val activateViewModel: ActivateViewModel = viewModel<ActivateViewModel>()
 
         val appsViewModel: AppsViewModel = viewModel<AppsViewModel>()
+        val disableAppsViewModel: DisableAppsViewModel = viewModel<DisableAppsViewModel>()
         val privilegeViewModel: PrivilegeViewModel = viewModel<PrivilegeViewModel>()
         val pluginViewModel: PluginViewModel = viewModel<PluginViewModel>()
 
@@ -213,6 +215,7 @@ class AxActivity : ComponentActivity() {
             if (axeronInfo.isRunning()) {
                 pluginViewModel.fetchModuleList()
                 appsViewModel.loadInstalledApps()
+                disableAppsViewModel.mergeNew()
                 privilegeViewModel.loadInstalledApps()
             }
         }
@@ -221,6 +224,7 @@ class AxActivity : ComponentActivity() {
             ViewModelGlobal(
                 settingsViewModel = settingsViewModel,
                 appsViewModel = appsViewModel,
+                disableAppsViewModel = disableAppsViewModel,
                 activateViewModel = activateViewModel,
                 pluginViewModel = pluginViewModel,
                 privilegeViewModel = privilegeViewModel
@@ -276,7 +280,8 @@ class AxActivity : ComponentActivity() {
                             navigator,
                             activateViewModel.axeronInfo,
                             activateViewModel.isShizukuActive,
-                            pluginViewModel.pluginUpdateCount
+                            pluginViewModel.pluginUpdateCount,
+                            settingsViewModel.bottomBarScale
                         )
                     }
                 }
@@ -365,20 +370,28 @@ class AxActivity : ComponentActivity() {
         navigator: DestinationsNavigator,
         axeronServerInfo: AxeronInfo,
         isShizukuActive: Boolean,
-        moduleUpdateCount: Int
+        moduleUpdateCount: Int,
+        bottomBarScale: Float
     ) {
         Box(
             modifier = Modifier
                 .wrapContentWidth()
-                .padding(bottom = 48.dp, start = 16.dp, end = 16.dp)
+                .padding(
+                    bottom = 48.dp * bottomBarScale,
+                    start = 16.dp * bottomBarScale,
+                    end = 16.dp * bottomBarScale
+                )
         ) {
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(20.dp * bottomBarScale))
                     .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                    .padding(
+                        horizontal = 8.dp * bottomBarScale,
+                        vertical = 6.dp * bottomBarScale
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp * bottomBarScale)
             ) {
                 BottomBarDestination.entries
                     .forEach { destination ->
@@ -392,7 +405,7 @@ class AxActivity : ComponentActivity() {
 
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(12.dp * bottomBarScale))
                                 .background(
                                     if (isCurrentDestOnBackStack)
                                         MaterialTheme.colorScheme.secondaryContainer
@@ -410,7 +423,7 @@ class AxActivity : ComponentActivity() {
                                         restoreState = true
                                     }
                                 }
-                                .padding(12.dp),
+                                .padding(12.dp * bottomBarScale),
                             contentAlignment = Alignment.Center
                         ) {
                             if (destination == BottomBarDestination.Plugin && moduleUpdateCount > 0) {
@@ -421,7 +434,7 @@ class AxActivity : ComponentActivity() {
                                         tint = if (isCurrentDestOnBackStack)
                                             MaterialTheme.colorScheme.onSecondaryContainer
                                         else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(24.dp * bottomBarScale)
                                     )
                                 }
                             } else {
@@ -431,7 +444,7 @@ class AxActivity : ComponentActivity() {
                                     tint = if (isCurrentDestOnBackStack)
                                         MaterialTheme.colorScheme.onSecondaryContainer
                                     else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(24.dp * bottomBarScale)
                                 )
                             }
                         }

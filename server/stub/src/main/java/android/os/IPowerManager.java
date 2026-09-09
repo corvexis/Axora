@@ -17,6 +17,8 @@ public interface IPowerManager extends IInterface {
 
     void releaseWakeLock(IBinder lock, int flags);
 
+    void crash(String message);
+
     abstract class Stub extends Binder implements IPowerManager {
 
         public static IPowerManager asInterface(IBinder obj) {

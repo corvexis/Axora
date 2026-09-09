@@ -4,6 +4,7 @@ package frb.axeron.manager.ui.viewmodel
 class ViewModelGlobal(
     val settingsViewModel: SettingsViewModel,
     val appsViewModel: AppsViewModel,
+    val disableAppsViewModel: DisableAppsViewModel,
     val privilegeViewModel: PrivilegeViewModel,
     val activateViewModel: ActivateViewModel,
     val pluginViewModel: PluginViewModel

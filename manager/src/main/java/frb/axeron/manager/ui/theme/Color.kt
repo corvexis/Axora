@@ -69,16 +69,21 @@ private val baseError = Color(0xFFFF452C)
 
 fun getVortexDarkColorScheme(
     customColor: Color = basePrimaryDefault,
+    secondaryOverride: Color? = null,
+    tertiaryOverride: Color? = null,
+    intensity: Float = 1f,
+    amoled: Boolean = false,
 ): ColorScheme {
-    val secondary = customColor.adjust(hueDelta = 20f, satMul = 0.70f)
-    val tertiary  = customColor.adjust(hueDelta = -60f, satMul = 0.70f)
-    val black = customColor.saturate(5f).blend(Color.Black, 0.7f)
+    val primary = customColor.adjust(satMul = intensity)
+    val secondary = secondaryOverride ?: primary.adjust(hueDelta = 20f, satMul = 0.70f)
+    val tertiary  = tertiaryOverride ?: primary.adjust(hueDelta = -60f, satMul = 0.70f)
+    val black = primary.saturate(5f).blend(Color.Black, 0.7f)
     val white = Color.White.blend(black, 0.10f)
-    val surfaceBase = Color(0xFF101010).blend(black, 0.08f)
+    val surfaceBase = if (amoled) AMOLED_BLACK else Color(0xFF101010).blend(black, 0.08f)
     val surfaceBright = surfaceBase.blend(Color.White, 0.10f)
     val surfaceDim = surfaceBase.blend(Color.Black, 0.10f)
 
-    return vortexDarkColorScheme(white, black, customColor, secondary, tertiary, surfaceBase, surfaceBright, surfaceDim)
+    return vortexDarkColorScheme(white, black, primary, secondary, tertiary, surfaceBase, surfaceBright, surfaceDim)
 }
 
 
@@ -165,11 +170,15 @@ private fun vortexDarkColorScheme(
 
 fun getVortexLightColorScheme(
     customColor: Color = basePrimaryDefault,
+    secondaryOverride: Color? = null,
+    tertiaryOverride: Color? = null,
+    intensity: Float = 1f,
 ): ColorScheme {
-    val black = customColor.saturate(5f).blend(Color.Black, 0.7f)
-    val primary = customColor.blend(black, 0.5f)
-    val secondary = customColor.adjust(hueDelta = 20f, satMul = 0.70f)
-    val tertiary  = customColor.adjust(hueDelta = -60f, satMul = 0.70f)
+    val adjusted = customColor.adjust(satMul = intensity)
+    val black = adjusted.saturate(5f).blend(Color.Black, 0.7f)
+    val primary = adjusted.blend(black, 0.5f)
+    val secondary = secondaryOverride ?: adjusted.adjust(hueDelta = 20f, satMul = 0.70f)
+    val tertiary  = tertiaryOverride ?: adjusted.adjust(hueDelta = -60f, satMul = 0.70f)
     val white = primary.blend(Color.White, 0.95f)
     val surfaceBaseLight = Color(0xFFFFFFFF).blend(white, 0.02f)
     val surfaceBrightLight = surfaceBaseLight.blend(Color.Black, 0.10f)

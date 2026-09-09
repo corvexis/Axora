@@ -2,14 +2,17 @@ package frb.axeron.manager.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.ramcosta.composedestinations.generated.destinations.DisableAppsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.PluginScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.PrivilegeScreenDestination
@@ -25,8 +28,13 @@ enum class BottomBarDestination(
     val needAxeron: Boolean
 ) {
     Home(HomeScreenDestination, R.string.home, Icons.Filled.Home, Icons.Outlined.Home, false),
-
-    //    QuickShell(QuickShellScreenDestination, "QuickShell", Icons.Filled.Terminal, Icons.Outlined.Terminal, true),
+    Apps(
+        DisableAppsScreenDestination,
+        R.string.apps,
+        Icons.Filled.Apps,
+        Icons.Outlined.Apps,
+        true
+    ),
     Privilege(
         PrivilegeScreenDestination,
         R.string.privilege,

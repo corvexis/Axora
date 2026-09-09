@@ -170,4 +170,109 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    var customSecondaryColorHex by mutableStateOf(
+        AxeronSettings.getCustomSecondaryColor()
+    )
+        private set
+
+    fun setCustomSecondaryColor(hex: String) {
+        viewModelScope.launch {
+            customSecondaryColorHex = hex
+            AxeronSettings.setSecondaryColor(hex)
+        }
+    }
+
+    fun removeCustomSecondaryColor() {
+        viewModelScope.launch {
+            customSecondaryColorHex = null
+            AxeronSettings.removeSecondaryColor()
+        }
+    }
+
+    var customTertiaryColorHex by mutableStateOf(
+        AxeronSettings.getCustomTertiaryColor()
+    )
+        private set
+
+    fun setCustomTertiaryColor(hex: String) {
+        viewModelScope.launch {
+            customTertiaryColorHex = hex
+            AxeronSettings.setTertiaryColor(hex)
+        }
+    }
+
+    fun removeCustomTertiaryColor() {
+        viewModelScope.launch {
+            customTertiaryColorHex = null
+            AxeronSettings.removeTertiaryColor()
+        }
+    }
+
+    var isAmoledEnabled by mutableStateOf(
+        AxeronSettings.getAmoledMode()
+    )
+        private set
+
+    fun setAmoled(enabled: Boolean) {
+        viewModelScope.launch {
+            isAmoledEnabled = enabled
+            AxeronSettings.setAmoledMode(enabled)
+        }
+    }
+
+    var cornerStyle by mutableIntStateOf(
+        AxeronSettings.getCornerStyle()
+    )
+        private set
+
+    fun updateCornerStyle(style: Int) {
+        viewModelScope.launch {
+            cornerStyle = style
+            AxeronSettings.setCornerStyle(style)
+        }
+    }
+
+    var accentIntensity by mutableStateOf(
+        AxeronSettings.getAccentIntensity()
+    )
+        private set
+
+    fun updateAccentIntensity(intensity: Float) {
+        viewModelScope.launch {
+            accentIntensity = intensity
+            AxeronSettings.setAccentIntensity(intensity)
+        }
+    }
+
+    var bottomBarScale by mutableStateOf(
+        AxeronSettings.getBottomBarScale()
+    )
+        private set
+
+    fun updateBottomBarScale(scale: Float) {
+        viewModelScope.launch {
+            bottomBarScale = scale
+            AxeronSettings.setBottomBarScale(scale)
+        }
+    }
+
+    var bannerImagePath by mutableStateOf(
+        AxeronSettings.getHomeBanner()
+    )
+        private set
+
+    fun setBannerImage(path: String) {
+        viewModelScope.launch {
+            bannerImagePath = path
+            AxeronSettings.setHomeBanner(path)
+        }
+    }
+
+    fun removeBannerImage() {
+        viewModelScope.launch {
+            bannerImagePath = null
+            AxeronSettings.removeHomeBanner()
+        }
+    }
+
 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.RestartAlt
@@ -145,7 +146,8 @@ fun PowerDialog(
     onDismiss: () -> Unit,
     onReignite: () -> Unit,
     onShutdown: () -> Unit,
-    onRestart: () -> Unit
+    onRestart: () -> Unit,
+    onSoftReboot: () -> Unit
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -200,6 +202,25 @@ fun PowerDialog(
                             onRestart()
                         }
                     )
+
+                    Button(
+                        onClick = {
+                            onDismiss()
+                            onSoftReboot()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        ),
+                        contentPadding = PaddingValues(16.dp),
+                        shape = CircleShape
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Autorenew,
+                            contentDescription = "Soft Reboot",
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
         }

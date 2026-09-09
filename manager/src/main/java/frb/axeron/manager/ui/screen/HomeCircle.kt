@@ -2,6 +2,9 @@ package frb.axeron.manager.ui.screen
 
 import android.os.Build
 import android.os.SystemClock
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -15,6 +18,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -60,16 +64,21 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ramcosta.composedestinations.generated.NavGraphs
@@ -95,6 +104,7 @@ import frb.axeron.manager.ui.util.openUpdateUrl
 import frb.axeron.manager.ui.viewmodel.ActivateViewModel
 import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.PrivilegeViewModel
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -106,7 +116,8 @@ fun HomeCircleScreen(
     navigator: DestinationsNavigator,
     activateViewModel: ActivateViewModel,
     pluginViewModel: PluginViewModel,
-    privilegeViewModel: PrivilegeViewModel
+    privilegeViewModel: PrivilegeViewModel,
+    bannerImagePath: String? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = AxeronSettings.getPreferences()
@@ -132,8 +143,6 @@ fun HomeCircleScreen(
     }
 
     LaunchedEffect(Unit) {
-        activateViewModel.setRestartContext(context)
-
         delay(80)
         enterAnimations[0] = true
         delay(100)
@@ -172,6 +181,12 @@ fun HomeCircleScreen(
                     AxeronCommandSession.getQuickCmd(Starter.internalCommand, true, false),
                     null, null
                 )
+            },
+            onSoftReboot = {
+                try {
+                    Axeron.softReboot()
+                } catch (_: Throwable) {
+                }
             }
         )
     }
@@ -188,7 +203,8 @@ fun HomeCircleScreen(
                 isShizukuActive = activateViewModel.isShizukuActive,
                 onPowerClick = { showPowerDialog = true },
                 onActivateClick = { navigator.navigate(ActivateScreenDestination) },
-                visible = enterAnimations[0]
+                visible = enterAnimations[0],
+                bannerImagePath = bannerImagePath
             )
 
             if (isRunning) {
@@ -287,7 +303,8 @@ private fun AxoraHeroHeader(
     isShizukuActive: Boolean,
     onPowerClick: () -> Unit,
     onActivateClick: () -> Unit,
-    visible: Boolean
+    visible: Boolean,
+    bannerImagePath: String?
 ) {
     val isRunning = status is ActivateViewModel.ActivateStatus.Running
     val isUpdating = status is ActivateViewModel.ActivateStatus.Updating
@@ -306,6 +323,10 @@ private fun AxoraHeroHeader(
         else -> MaterialTheme.colorScheme.error
     }
 
+    var bannerSize by remember { mutableStateOf(IntSize.Zero) }
+
+    val bannerContext = LocalContext.current
+
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = tween(400)) + slideInVertically(
@@ -313,17 +334,54 @@ private fun AxoraHeroHeader(
             initialOffsetY = { -it / 3 }
         )
     ) {
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        0f to heroColor.copy(alpha = 0.35f),
-                        0.6f to heroColor.copy(alpha = 0.08f),
-                        1f to Color.Transparent
-                    )
-                )
+                .onSizeChanged { bannerSize = it }
         ) {
+            if (bannerImagePath != null && bannerSize.width > 0 && bannerSize.height > 0) {
+                val bannerRequest = remember(bannerImagePath, bannerSize) {
+                    ImageRequest.Builder(bannerContext)
+                        .data(File(bannerImagePath))
+                        .size(Size(bannerSize.width, bannerSize.height))
+                        .build()
+                }
+
+                AsyncImage(
+                    model = bannerRequest,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .matchParentSize()
+                        .alpha(0.9f)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color.Black.copy(alpha = 0.45f),
+                                0.45f to Color.Black.copy(alpha = 0.28f),
+                                0.65f to Color.Transparent,
+                                1f to MaterialTheme.colorScheme.background
+                            )
+                        )
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to heroColor.copy(alpha = 0.35f),
+                            0.6f to heroColor.copy(alpha = 0.08f),
+                            1f to Color.Transparent
+                        )
+                    )
+            )
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

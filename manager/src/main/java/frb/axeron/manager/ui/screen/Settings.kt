@@ -1,7 +1,12 @@
 package frb.axeron.manager.ui.screen
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
@@ -39,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,10 +78,54 @@ import frb.axeron.manager.ui.screen.settings.ConnectionSettings
 import frb.axeron.manager.ui.screen.settings.OtherSettings
 import frb.axeron.manager.ui.screen.settings.PathSettings
 import frb.axeron.manager.ui.viewmodel.ViewModelGlobal
+import frb.axeron.manager.ui.theme.adjust
+import frb.axeron.manager.ui.theme.basePrimaryDefault
 import frb.axeron.manager.ui.theme.hexToColor
 import frb.axeron.manager.ui.util.LocaleHelper
 import androidx.compose.ui.platform.LocalContext
+import java.io.File
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+enum class ColorTarget {
+    PRIMARY,
+    SECONDARY,
+    TERTIARY
+}
+
+private fun copyUriToFile(context: android.content.Context, uri: Uri): String {
+    val file = File(context.filesDir, "home_banner_${System.currentTimeMillis()}.jpg")
+    val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        ?: return file.absolutePath
+
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+        file.writeBytes(bytes)
+        return file.absolutePath
+    }
+
+    var sampleSize = 1
+    val maxDimension = 1600
+    while (bounds.outWidth / sampleSize > maxDimension ||
+        bounds.outHeight / sampleSize > maxDimension
+    ) {
+        sampleSize *= 2
+    }
+
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+    if (bitmap == null) {
+        file.writeBytes(bytes)
+        return file.absolutePath
+    }
+
+    file.outputStream().use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out) }
+    bitmap.recycle()
+    return file.absolutePath
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>
@@ -86,11 +136,21 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
     
     var searchText by remember { mutableStateOf("") }
     var showDevDialog by remember { mutableStateOf(false) }
-    var showColorPicker by remember { mutableStateOf(false) }
+    var colorTarget by remember { mutableStateOf<ColorTarget?>(null) }
 
     val axeronRunning = activateViewModel.axeronInfo.isRunning()
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
+    val scope = rememberCoroutineScope()
+
+    val bannerPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val path = withContext(Dispatchers.IO) { copyUriToFile(context, uri) }
+                settings.setBannerImage(path)
+            }
+        }
+    }
     
     var currentLanguageDisplay by remember { 
         mutableStateOf<String?>(null)
@@ -193,6 +253,32 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                 },
                 dynamicColorEnabled = settings.isDynamicColorEnabled,
                 onDynamicColorChange = { settings.setDynamicColor(it) },
+                amoledEnabled = settings.isAmoledEnabled,
+                onAmoledChange = { settings.setAmoled(it) },
+                cornerStyle = settings.cornerStyle,
+                onCornerStyleChange = { settings.updateCornerStyle(it) },
+                accentIntensity = settings.accentIntensity,
+                onAccentIntensityChange = { settings.updateAccentIntensity(it) },
+                bottomBarScale = settings.bottomBarScale,
+                onBottomBarScaleChange = { settings.updateBottomBarScale(it) },
+                secondaryColorHex = settings.customSecondaryColorHex,
+                onSecondaryPaletteClick = {
+                    colorTarget = ColorTarget.SECONDARY
+                },
+                tertiaryColorHex = settings.customTertiaryColorHex,
+                onTertiaryPaletteClick = {
+                    colorTarget = ColorTarget.TERTIARY
+                },
+                bannerImagePath = settings.bannerImagePath,
+                onBannerClick = { bannerPicker.launch("image/*") },
+                onBannerRemove = {
+                    settings.bannerImagePath?.let { path ->
+                        scope.launch {
+                            withContext(Dispatchers.IO) { File(path).delete() }
+                        }
+                    }
+                    settings.removeBannerImage()
+                },
                 systemFontEnabled = settings.isSystemFontEnabled,
                 onSystemFontChange = { settings.setSystemFont(it) },
                 fontChoice = settings.fontChoice,
@@ -202,7 +288,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                     LocaleHelper.launchSystemLanguageSettings(context)
                 },
                 onPaletteClick = {
-                    showColorPicker = true
+                    colorTarget = ColorTarget.PRIMARY
                 },
                 onPresetSelected = { hex ->
                     settings.setCustomPrimaryColor(hex)
@@ -241,19 +327,49 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
 
 
 
-    if (showColorPicker) {
-        PaletteDialog(
+    val currentSecondaryColor = settings.customSecondaryColorHex?.let { hexToColor(it) }
+        ?: basePrimaryDefault.adjust(hueDelta = 20f, satMul = 0.70f)
+    val currentTertiaryColor = settings.customTertiaryColorHex?.let { hexToColor(it) }
+        ?: basePrimaryDefault.adjust(hueDelta = -60f, satMul = 0.70f)
+
+    when (colorTarget) {
+        ColorTarget.PRIMARY -> PaletteDialog(
             initialColor = currentColor,
-            onDismiss = { showColorPicker = false },
+            onDismiss = { colorTarget = null },
             onConfirm = { hex ->
                 settings.setCustomPrimaryColor(hex)
-                showColorPicker = false
+                colorTarget = null
             },
             onReset = {
                 settings.removeCustomPrimaryColor()
-                showColorPicker = false
+                colorTarget = null
             }
         )
+        ColorTarget.SECONDARY -> PaletteDialog(
+            initialColor = currentSecondaryColor,
+            onDismiss = { colorTarget = null },
+            onConfirm = { hex ->
+                settings.setCustomSecondaryColor(hex)
+                colorTarget = null
+            },
+            onReset = {
+                settings.removeCustomSecondaryColor()
+                colorTarget = null
+            }
+        )
+        ColorTarget.TERTIARY -> PaletteDialog(
+            initialColor = currentTertiaryColor,
+            onDismiss = { colorTarget = null },
+            onConfirm = { hex ->
+                settings.setCustomTertiaryColor(hex)
+                colorTarget = null
+            },
+            onReset = {
+                settings.removeCustomTertiaryColor()
+                colorTarget = null
+            }
+        )
+        null -> {}
     }
 }
 

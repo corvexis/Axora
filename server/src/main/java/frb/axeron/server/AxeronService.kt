@@ -556,6 +556,17 @@ open class AxeronService :
         return RemoteProcessHolder(process, null)
     }
 
+    override fun softReboot() {
+        enforceCallingPermission("softReboot")
+
+        LOGGER.d(
+            "softReboot: uid=%d",
+            getCallingUid()
+        )
+
+        powerManager.get().crash("Reboot")
+    }
+
     override fun getServerInfo(): ServerInfo {
         return ServerInfo(
             VERSION_NAME,
