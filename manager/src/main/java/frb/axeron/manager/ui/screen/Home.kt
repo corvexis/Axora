@@ -3,11 +3,6 @@ package frb.axeron.manager.ui.screen
 import android.os.Build
 import android.os.SystemClock
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -23,16 +18,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Update
@@ -40,22 +31,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,7 +48,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -75,33 +59,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.ActivateScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.QuickShellScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import frb.axeron.api.Axeron
-import frb.axeron.api.AxeronCommandSession
-import frb.axeron.api.AxeronPluginService
-import frb.axeron.api.core.Starter
-import frb.axeron.api.core.AxeronSettings
 import frb.axeron.manager.BuildConfig
-import frb.axeron.manager.AxeronApplication
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.ExtraLabel
 import frb.axeron.manager.ui.component.ExtraLabelDefaults
 import frb.axeron.manager.ui.component.PluginCard
-import frb.axeron.manager.ui.component.PowerDialog
 import frb.axeron.manager.ui.component.PrivilegeCard
-import frb.axeron.manager.ui.component.rememberConfirmDialog
-import frb.axeron.manager.ui.component.rememberLoadingDialog
-import frb.axeron.manager.ui.util.checkNewVersion
-import frb.axeron.manager.ui.util.openUpdateUrl
 import frb.axeron.manager.ui.viewmodel.ActivateViewModel
 import frb.axeron.manager.ui.viewmodel.ViewModelGlobal
 import frb.axeron.shared.AxeronApiConstant.server.VERSION_CODE
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>(start = true)
@@ -111,167 +79,9 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
         navigator = navigator,
         activateViewModel = viewModelGlobal.activateViewModel,
         pluginViewModel = viewModelGlobal.pluginViewModel,
-        privilegeViewModel = viewModelGlobal.privilegeViewModel
+        privilegeViewModel = viewModelGlobal.privilegeViewModel,
+        bannerImagePath = viewModelGlobal.settingsViewModel.bannerImagePath
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeScreenOriginal(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlobal) {
-    val context = LocalContext.current
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    val pluginViewModel = viewModelGlobal.pluginViewModel
-    val privilegeViewModel = viewModelGlobal.privilegeViewModel
-    val activateViewModel = viewModelGlobal.activateViewModel
-
-    val isRunning = activateViewModel.activateStatus is ActivateViewModel.ActivateStatus.Running
-    val prefs = AxeronSettings.getPreferences()
-    var showUpdateDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        if (prefs.getBoolean("auto_update_check", true)) {
-            withContext(Dispatchers.IO) {
-                kotlinx.coroutines.delay(2000)
-                val hasUpdate = checkNewVersion()
-                if (hasUpdate) {
-                    showUpdateDialog = true
-                }
-            }
-        }
-        activateViewModel.setRestartContext(context)
-    }
-
-    if (showUpdateDialog) {
-        frb.axeron.manager.ui.component.UpdateDialog(
-            onDismiss = { showUpdateDialog = false },
-            onUpdate = {
-                showUpdateDialog = false
-                openUpdateUrl(context)
-            }
-        )
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-                actions = {
-                    val loadingDialog = rememberLoadingDialog()
-                    val scope = rememberCoroutineScope()
-
-                    var showDialog by remember { mutableStateOf(false) }
-
-                    if (showDialog) {
-                        PowerDialog(
-                            onDismiss = { showDialog = false },
-                            onReignite = {
-                                scope.launch {
-                                    val success = loadingDialog.withLoading {
-                                        AxeronPluginService.igniteSuspendService()
-                                    }
-
-                                    if (success) {
-                                        pluginViewModel.fetchModuleList()
-                                    }
-                                }
-                            },
-                            onShutdown = {
-                                activateViewModel.markIntentionalStop()
-                                Axeron.destroy()
-                            },
-                            onRestart = {
-                                activateViewModel.markIntentionalStop()
-                                Axeron.newProcess(
-                                    AxeronCommandSession.getQuickCmd(
-                                        Starter.internalCommand,
-                                        true,
-                                        false
-                                    ),
-                                    null,
-                                    null
-                                )
-                            }
-                        )
-                    }
-
-                    AnimatedVisibility(visible = isRunning) {
-                        IconButton(
-                            modifier = Modifier.padding(end = 2.dp),
-                            onClick = { showDialog = true }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PowerSettingsNew,
-                                contentDescription = "Shutdown"
-                            )
-                        }
-
-                    }
-                    Spacer(modifier = Modifier.padding(end = 12.dp))
-                },
-                scrollBehavior = scrollBehavior,
-            )
-        },
-        floatingActionButton = {
-            Box(
-                modifier = Modifier.padding(bottom = 26.dp, end = 16.dp)
-            ) {
-                AnimatedVisibility(visible = isRunning) {
-                    FloatingActionButton(
-                        onClick = {
-                            navigator.navigate(QuickShellScreenDestination)
-                        }
-                    ) {
-                        Icon(Icons.Filled.Terminal, null)
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(top = 12.dp)
-                .padding(bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            StatusCard(
-                activateViewModel = activateViewModel
-            ) {
-                if (!it) {
-                    navigator.navigate(ActivateScreenDestination)
-                }
-            }
-            AnimatedVisibility(visible = isRunning) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    PluginCard(
-                        Modifier.weight(1f),
-                        pluginViewModel
-                    )
-                    PrivilegeCard(
-                        Modifier.weight(1f),
-                        privilegeViewModel
-                    )
-                }
-            }
-
-            InfoCard(activateViewModel)
-
-            SupportCard()
-            LearnCard()
-            IssueReportCard()
-        }
-    }
 }
 
 @Composable

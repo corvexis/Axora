@@ -234,6 +234,12 @@
     <string name="settings_check_update">檢查更新</string>
     <string name="settings_auto_update_check">自動檢查更新</string>
     <string name="settings_auto_update_check_summary">應用程式啟動時自動檢查更新</string>
+    <string name="gimmick_guard">GimmickGuard</string>
+    <string name="gimmick_guard_summary">安裝前掃描外掛中的可疑程式碼</string>
+    <string name="gimmick_guard_confirm_title">確認刷入</string>
+    <string name="gimmick_guard_confirmation_msg">確定要刷入這些外掛嗎？</string>
+    <string name="gimmick_guard_enabled_info">GimmickGuard 已啟用。將掃描外掛中的可疑程式碼。</string>
+    <string name="gimmick_guard_disabled_warning">GimmickGuard 已停用。外掛將在無安全掃描的情況下安裝。</string>
     <string name="update_available_title">有可用更新</string>
     <string name="update_available_message">偵測到您的版本過低，是否下載新版本？</string>
     <string name="update_action">更新</string>

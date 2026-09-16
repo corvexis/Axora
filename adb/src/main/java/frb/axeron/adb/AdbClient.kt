@@ -127,7 +127,6 @@ class AdbClient(private val key: AdbKey, private val port: Int, private val host
     private fun write(message: AdbMessage) {
         outputStream.write(message.toByteArray())
         outputStream.flush()
-        Log.d(TAG, "write ${message.toStringShort()}")
     }
 
     private fun read(): AdbMessage {
@@ -150,7 +149,6 @@ class AdbClient(private val key: AdbKey, private val port: Int, private val host
         }
         val message = AdbMessage(command, arg0, arg1, dataLength, checksum, magic, data)
         message.validateOrThrow()
-        Log.d(TAG, "read ${message.toStringShort()}")
         return message
     }
 

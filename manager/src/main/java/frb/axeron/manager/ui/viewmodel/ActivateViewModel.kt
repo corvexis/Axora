@@ -104,17 +104,11 @@ class ActivateViewModel : ViewModel() {
     var intentionalStop by mutableStateOf(false)
         private set
 
-    private var _restartContext: Context? = null
-
     fun markIntentionalStop() {
         intentionalStop = true
         AxeronSettings.setWasRunning(false)
         ServerHealthScheduler.cancel(Engine.application)
         autoRestartJob?.cancel()
-    }
-
-    fun setRestartContext(context: Context) {
-        _restartContext = context
     }
 
     sealed class ActivateStatus {
@@ -261,14 +255,10 @@ class ActivateViewModel : ViewModel() {
     }
 
     private suspend fun tryAdbRestart() {
-        val context = _restartContext ?: run {
-            Log.w(TAG, "Auto-restart via ADB: no context available")
-            return
-        }
         runCatching {
             val tcpPort = AxeronSettings.getTcpPort()
             if (tcpPort > 0) {
-                AdbStarter.startAdbClient(context, tcpPort) {}
+                AdbStarter.startAdbClient(Engine.application, tcpPort) {}
                 Log.i(TAG, "Auto-restart via ADB TCP: command sent to port $tcpPort")
             } else {
                 Log.w(TAG, "Auto-restart via ADB: no TCP port configured")

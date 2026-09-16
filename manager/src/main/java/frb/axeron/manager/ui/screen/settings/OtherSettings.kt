@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Web
 import androidx.compose.runtime.Composable
@@ -62,10 +63,15 @@ fun OtherSettings(
     val autoUpdateSummary = stringResource(R.string.settings_auto_update_check_summary)
     val showAutoUpdate = matchCategory || shouldShow(searchText, autoUpdateTitle, autoUpdateSummary)
 
-    val showCategory = showSettingsEditor || showDeveloperMode || showWebDebug || showUpdate || showAutoUpdate
+    val gimmickGuardTitle = stringResource(R.string.gimmick_guard)
+    val gimmickGuardSummary = stringResource(R.string.gimmick_guard_summary)
+    val showGimmickGuard = matchCategory || shouldShow(searchText, gimmickGuardTitle, gimmickGuardSummary)
+
+    val showCategory = showSettingsEditor || showDeveloperMode || showWebDebug || showUpdate || showAutoUpdate || showGimmickGuard
 
     var showUpdateDialog by remember { mutableStateOf(false) }
     var autoUpdateCheck by remember { mutableStateOf(prefs.getBoolean("auto_update_check", true)) }
+    var gimmickGuardEnabled by remember { mutableStateOf(AxeronSettings.getGimmickGuardEnabled()) }
 
     if (showCategory) {
         SettingsCategory(
@@ -110,6 +116,19 @@ fun OtherSettings(
                     onCheckedChange = {
                         autoUpdateCheck = it
                         prefs.edit { putBoolean("auto_update_check", it) }
+                    }
+                )
+            }
+
+            if (showGimmickGuard) {
+                SwitchItem(
+                    icon = Icons.Filled.Security,
+                    title = gimmickGuardTitle,
+                    summary = gimmickGuardSummary,
+                    checked = gimmickGuardEnabled,
+                    onCheckedChange = {
+                        gimmickGuardEnabled = it
+                        AxeronSettings.setGimmickGuardEnabled(it)
                     }
                 )
             }

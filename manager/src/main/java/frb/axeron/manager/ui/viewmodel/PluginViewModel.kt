@@ -174,7 +174,6 @@ class PluginViewModel(application: Application) : AndroidViewModel(application) 
             val response = axeronApp.okhttpClient.newCall(
                 Request.Builder().url(url).build()
             ).execute()
-            Log.d(TAG, "checkUpdate code: ${response.code}")
             if (response.isSuccessful) {
                 response.body?.string() ?: ""
             } else {

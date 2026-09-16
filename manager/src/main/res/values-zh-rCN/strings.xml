@@ -234,6 +234,12 @@
     <string name="settings_check_update">检查更新</string>
     <string name="settings_auto_update_check">自动检查更新</string>
     <string name="settings_auto_update_check_summary">应用启动时自动检查更新</string>
+    <string name="gimmick_guard">GimmickGuard</string>
+    <string name="gimmick_guard_summary">安装前扫描插件中的可疑代码</string>
+    <string name="gimmick_guard_confirm_title">确认刷入</string>
+    <string name="gimmick_guard_confirmation_msg">确定要刷入这些插件吗？</string>
+    <string name="gimmick_guard_enabled_info">GimmickGuard 已启用。将扫描插件中的可疑代码。</string>
+    <string name="gimmick_guard_disabled_warning">GimmickGuard 已禁用。插件将在无安全扫描的情况下安装。</string>
     <string name="update_available_title">有可用更新</string>
     <string name="update_available_message">检测到您的版本过低，是否下载新版本？</string>
     <string name="update_action">更新</string>

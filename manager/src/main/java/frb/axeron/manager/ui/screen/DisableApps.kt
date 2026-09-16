@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -33,8 +34,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -48,6 +51,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.SearchAppBar
+import frb.axeron.manager.ui.util.LocalBottomBarHidden
 import frb.axeron.manager.ui.viewmodel.DisableAppsViewModel
 import frb.axeron.manager.ui.viewmodel.ViewModelGlobal
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +66,28 @@ fun DisableAppsScreen(
 ) {
     val viewModel = viewModelGlobal.disableAppsViewModel
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val listState = rememberLazyListState()
+    val bottomBarHidden = LocalBottomBarHidden.current
+
+    LaunchedEffect(listState) {
+        var lastIndex = listState.firstVisibleItemIndex
+        var lastOffset = listState.firstVisibleItemScrollOffset
+
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (currIndex, currOffset) ->
+                val isScrollingDown = currIndex > lastIndex ||
+                        (currIndex == lastIndex && currOffset > lastOffset + 4)
+                val isScrollingUp = currIndex < lastIndex ||
+                        (currIndex == lastIndex && currOffset < lastOffset - 4)
+
+                when {
+                    isScrollingDown && !bottomBarHidden.value -> bottomBarHidden.value = true
+                    isScrollingUp && bottomBarHidden.value -> bottomBarHidden.value = false
+                }
+                lastIndex = currIndex
+                lastOffset = currOffset
+            }
+    }
 
     Scaffold(
         topBar = {
@@ -111,7 +137,7 @@ fun DisableAppsScreen(
                     }
 
                     else -> {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                             items(
                                 viewModel.filteredEntries,
                                 key = { it.packageName }

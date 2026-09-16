@@ -96,10 +96,20 @@ enum class ColorTarget {
 }
 
 private fun copyUriToFile(context: android.content.Context, uri: Uri): String {
-    val file = File(context.filesDir, "home_banner_${System.currentTimeMillis()}.jpg")
     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        ?: return file.absolutePath
+        ?: return File(context.filesDir, "home_banner_${System.currentTimeMillis()}.jpg").absolutePath
 
+    val isGif = bytes.size > 4 &&
+        bytes[0] == 0x47.toByte() && bytes[1] == 0x49.toByte() &&
+        bytes[2] == 0x46.toByte() && bytes[3] == 0x38.toByte()
+
+    if (isGif) {
+        val file = File(context.filesDir, "home_banner_${System.currentTimeMillis()}.gif")
+        file.writeBytes(bytes)
+        return file.absolutePath
+    }
+
+    val file = File(context.filesDir, "home_banner_${System.currentTimeMillis()}.jpg")
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
@@ -381,7 +391,7 @@ fun DeveloperInfo(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val githubUrl = "https://github.com/Sophctl"
+    val githubUrl = "https://github.com/corvexis"
     val telegramUrl = "https://t.me/sys_soph"
                 val sociabuzzUrl = "https://sociabuzz.com/sophctl/tribe"
 
@@ -408,7 +418,7 @@ fun DeveloperInfo(
                     ) {
                     AsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data("https://raw.githubusercontent.com/corvexis/Axora/refs/heads/main/1772024051-1deb23ed.jpg")
+                            .data("https://raw.githubusercontent.com/corvexis/Axora/refs/heads/main/corvexis.jpg")
                             .crossfade(true)
                             .build(),
                         contentDescription = "Developer Profile Picture",
@@ -423,7 +433,7 @@ fun DeveloperInfo(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Soph.ctl",
+                    text = "corvexis",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )

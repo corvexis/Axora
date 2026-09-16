@@ -1,7 +1,6 @@
 package frb.axeron.manager.ui.screen
 
 import android.content.Context
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -252,7 +251,6 @@ fun SettingsEditorScreen(
                         loadingStates[type] = true
                         dataCache[type] = settingsRepository.getAll(type)
                         loadingStates[type] = false
-                        Log.d("SettingsEditor", "loaded $type")
                     }
                 }
 

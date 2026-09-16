@@ -73,9 +73,5 @@
     ** requireNonNull(...);
 }
 
-#-keep class com.frb.engine.Starter {
-#    public static void main(java.lang.String[]);
-#}
-
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile

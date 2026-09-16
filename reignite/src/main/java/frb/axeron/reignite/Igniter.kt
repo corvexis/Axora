@@ -8,6 +8,8 @@ import java.io.File
 
 object Igniter {
 
+    private const val TAG = "axeron_plugin_igniter"
+
     private var VERSION = "v1"
 
     private val AXERONDIR = System.getenv("AXERONDIR")
@@ -26,7 +28,7 @@ object Igniter {
         DEBUG = debug
 
         DdmHandleAppName.setAppName("axeron_plugin_igniter", 0)
-        Log.i("test", "AXERON Plugin Manager ($VERSION)")
+        Log.i(TAG, "AXERON Plugin Manager ($VERSION)")
         println("AXERON Plugin Manager ($VERSION)")
 
         cleanUpdateDir()

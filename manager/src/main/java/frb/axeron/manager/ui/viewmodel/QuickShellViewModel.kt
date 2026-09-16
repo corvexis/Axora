@@ -1,7 +1,6 @@
 package frb.axeron.manager.ui.viewmodel
 
 import android.app.Application
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -30,7 +29,6 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
     init {
         session.setProcessListener(object : AxeronCommandSession.ProcessListener {
             override fun onProcessCreated(pid: Int, command: String) {
-                Log.i("QuickShellViewModel", "onProcessCreated: $pid")
                 if (command.lines().size > 1) {
                     append(OutputType.TYPE_COMMAND, "[command]")
                     append(OutputType.TYPE_COMMAND, command.trim())
@@ -43,14 +41,12 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
             }
 
             override fun onProcessRunning(input: String) {
-                Log.i("QuickShellViewModel", "onProcessRunning: $input")
                 val tagInput = if (input.lines().size > 1) "[input]\n" else "[input] "
                 append(OutputType.TYPE_STDIN, tagInput + input.trim())
                 if (isClearCommandEnabled) commandText = TextFieldValue("")
             }
 
             override fun onProcessFinished(exitCode: Int, lastOutput: String) {
-                Log.i("QuickShellViewModel", "onProcessFinished: $exitCode")
                 if (!AnsiFilter.isScreenControl(lastOutput)) {
                     append(OutputType.TYPE_EXIT, "[exit] code=$exitCode")
                     append(OutputType.TYPE_SPACE, "")

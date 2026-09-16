@@ -5,7 +5,6 @@ import android.os.Build
 import android.os.Parcelable
 import android.text.Layout
 import android.text.method.LinkMovementMethod
-import android.util.Log
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.compose.foundation.layout.Box
@@ -54,8 +53,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.parcelize.Parcelize
 import kotlin.coroutines.resume
-
-private const val TAG = "DialogComponent"
 
 interface ConfirmDialogVisuals : Parcelable {
     val dragHandle: Boolean
@@ -218,7 +215,6 @@ private class ConfirmDialogHandleImpl(
         private val callback: ConfirmCallback
     ) : FlowCollector<ConfirmResult> {
         fun handleResult(result: ConfirmResult) {
-            Log.d(TAG, "handleResult: ${result.javaClass.simpleName}")
             when (result) {
                 ConfirmResult.Confirmed -> onConfirm()
                 ConfirmResult.Dismissed -> onDismiss()
@@ -358,7 +354,6 @@ private class ConfirmDialogHandleImpl(
                 it.visuals
             },
             restore = {
-                Log.d(TAG, "ConfirmDialog restore, visuals: $it")
                 ConfirmDialogHandleImpl(visible, coroutineScope, callback, it, resultChannel)
             }
         )

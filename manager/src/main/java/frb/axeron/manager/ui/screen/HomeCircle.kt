@@ -4,7 +4,6 @@ import android.os.Build
 import android.os.SystemClock
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import coil.size.Size
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -341,9 +340,13 @@ private fun AxoraHeroHeader(
         ) {
             if (bannerImagePath != null && bannerSize.width > 0 && bannerSize.height > 0) {
                 val bannerRequest = remember(bannerImagePath, bannerSize) {
+                    val maxDim = 1920
                     ImageRequest.Builder(bannerContext)
                         .data(File(bannerImagePath))
-                        .size(Size(bannerSize.width, bannerSize.height))
+                        .size(
+                            minOf(bannerSize.width, maxDim),
+                            minOf(bannerSize.height, maxDim)
+                        )
                         .build()
                 }
 

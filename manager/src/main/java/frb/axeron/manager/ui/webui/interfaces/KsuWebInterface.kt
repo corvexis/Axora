@@ -95,9 +95,6 @@ class KsuWebInterface(
                 processOptions(this, options)
                 append(cmd)
             }
-//            val finalCommand = StringBuilder()
-//            processOptions(finalCommand, options)
-//            finalCommand.append(cmd)
 
             val result = AxeronPluginService.execWithIO(
                 cmd = finalCommand,
@@ -135,19 +132,6 @@ class KsuWebInterface(
                     append(command)
                 }
             }
-
-//            val finalCommand = StringBuilder()
-//            processOptions(finalCommand, options)
-//            if (!TextUtils.isEmpty(args)) {
-//                finalCommand.append(command).append(" ")
-//                JSONArray(args).let { argsArray ->
-//                    for (i in 0 until argsArray.length()) {
-//                        finalCommand.append(argsArray.getString(i)).append(" ")
-//                    }
-//                }
-//            } else {
-//                finalCommand.append(command)
-//            }
 
             val emitData = fun(name: String, data: String) {
                 val jsCode =
@@ -260,7 +244,6 @@ class KsuWebInterface(
 
     @JavascriptInterface
     fun listSystemPackages(): String {
-//        val pm = context.packageManager
         val packages = Axeron.getPackages(0).mapNotNull { pkg ->
             val appInfo = pkg.applicationInfo
             if (appInfo != null && (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0) {
@@ -277,7 +260,6 @@ class KsuWebInterface(
 
     @JavascriptInterface
     fun listUserPackages(): String {
-//        val pm = context.packageManager
         val packages = Axeron.getPackages(0)
             .mapNotNull { pkg ->
                 val appInfo = pkg.applicationInfo
@@ -295,7 +277,6 @@ class KsuWebInterface(
 
     @JavascriptInterface
     fun listAllPackages(): String {
-//        val pm = context.packageManager
         val packages = Axeron.getPackages(0)
             .map { it.packageName }.sorted()
         val jsonArray = JSONArray()

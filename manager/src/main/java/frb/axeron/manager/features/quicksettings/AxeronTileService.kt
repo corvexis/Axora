@@ -10,19 +10,15 @@ class AxeronTileService : android.service.quicksettings.TileService() {
     override fun onStartListening() {
         super.onStartListening()
         qsTile.apply {
-            label = "AxTest"
+            label = getString(R.string.qs_tile_label)
             icon = Icon.createWithResource(this@AxeronTileService, R.drawable.ic_axeron)
             state = Tile.STATE_INACTIVE
             updateTile()
         }
-
-
     }
 
     override fun onClick() {
         super.onClick()
-        Toast.makeText(this, "Clicked", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.qs_tile_clicked), Toast.LENGTH_SHORT).show()
     }
-
-
 }

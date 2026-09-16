@@ -57,6 +57,7 @@ class AxeronApplication : Engine() {
                 .components {
                     add(AppIconKeyer())
                     add(AppIconFetcher.Factory(iconSize, false, context))
+                    add(coil.decode.GifDecoder.Factory())
                 }
                 .build()
         )

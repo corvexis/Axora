@@ -1,6 +1,5 @@
 package frb.axeron.manager.ui.component
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -44,8 +43,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import frb.axeron.manager.R
-
-private const val TAG = "SearchBar"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,7 +95,6 @@ fun SearchAppBar(
                             .focusRequester(focusRequester)
                             .onFocusChanged { focusState ->
                                 if (focusState.isFocused) onSearch = true
-                                Log.d(TAG, "onFocusChanged: $focusState")
                             },
                         textStyle = MaterialTheme.typography.bodyLarge,
                         label = {

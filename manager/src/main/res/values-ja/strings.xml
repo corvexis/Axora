@@ -234,6 +234,12 @@
     <string name="settings_check_update">更新を確認</string>
     <string name="settings_auto_update_check">自動更新チェック</string>
     <string name="settings_auto_update_check_summary">アプリの起動時に自動的に更新を確認する</string>
+    <string name="gimmick_guard">GimmickGuard</string>
+    <string name="gimmick_guard_summary">インストール前にプラグイン内の不審なコードをスキャンします</string>
+    <string name="gimmick_guard_confirm_title">フラッシュ確認</string>
+    <string name="gimmick_guard_confirmation_msg">これらのプラグインをフラッシュしてもよろしいですか？</string>
+    <string name="gimmick_guard_enabled_info">GimmickGuard が有効です。プラグインは不審なコードのスキャン対象になります。</string>
+    <string name="gimmick_guard_disabled_warning">GimmickGuard が無効です。プラグインはセキュリティスキャンなしでインストールされます。</string>
     <string name="update_available_title">更新が利用可能</string>
     <string name="update_available_message">バージョンが古いことが検出されました。新しいバージョンをダウンロードしますか？</string>
     <string name="update_action">更新</string>

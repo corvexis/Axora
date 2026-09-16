@@ -6,7 +6,6 @@ import android.content.ContextWrapper
 import android.net.Uri
 import android.os.Parcelable
 import android.provider.OpenableColumns
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -34,8 +33,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -264,6 +265,59 @@ fun InstallDialog(
     }
 }
 
+@Composable
+fun GimmickGuardConfirmDialog(
+    gimmickGuardEnabled: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val enabledInfo = stringResource(R.string.gimmick_guard_enabled_info)
+    val disabledWarning = stringResource(R.string.gimmick_guard_disabled_warning)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Filled.Security,
+                contentDescription = null,
+                tint = if (gimmickGuardEnabled) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                }
+            )
+        },
+        title = {
+            Text(stringResource(R.string.gimmick_guard_confirm_title))
+        },
+        text = {
+            Column {
+                Text(stringResource(R.string.gimmick_guard_confirmation_msg))
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = if (gimmickGuardEnabled) enabledInfo else disabledWarning,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (gimmickGuardEnabled) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>
 @Composable
@@ -300,9 +354,10 @@ fun FlashScreen(
         if (finishIntent) activity?.finish()
     }
 
-//    var confirmed by rememberSaveable { mutableStateOf(flashIt !is FlashIt.FlashPlugins) }
     var pendingFlashIt by rememberSaveable { mutableStateOf<FlashIt?>(null) }
 
+    var awaitingConfirm by rememberSaveable { mutableStateOf(false) }
+    var confirmIt by rememberSaveable { mutableStateOf<FlashIt?>(null) }
 
     if (flashIt is FlashIt.FlashUninstall) {
         flashing == FlashingStatus.FLASHING
@@ -311,11 +366,11 @@ fun FlashScreen(
 
 
     InstallDialog(
-        confirm = flashing == FlashingStatus.IDLE,
+        confirm = flashing == FlashingStatus.IDLE && !awaitingConfirm,
         flashIt = flashIt,
         onConfirm = {
-            flashing = FlashingStatus.FLASHING
-            pendingFlashIt = it
+            awaitingConfirm = true
+            confirmIt = it
         },
         onDismiss = {
             flashing = FlashingStatus.FAILED
@@ -323,6 +378,25 @@ fun FlashScreen(
             if (finishIntent) activity?.finish()
         }
     )
+
+    if (awaitingConfirm && confirmIt is FlashIt.FlashPlugins) {
+        GimmickGuardConfirmDialog(
+            gimmickGuardEnabled = AxeronSettings.getGimmickGuardEnabled(),
+            onConfirm = {
+                awaitingConfirm = false
+                flashing = FlashingStatus.FLASHING
+                pendingFlashIt = confirmIt
+                confirmIt = null
+            },
+            onDismiss = {
+                awaitingConfirm = false
+                confirmIt = null
+                flashing = FlashingStatus.FAILED
+                navigator.popBackStack()
+                if (finishIntent) activity?.finish()
+            }
+        )
+    }
 
     val scope = rememberCoroutineScope()
     val logContent = rememberSaveable { StringBuilder() }
@@ -334,7 +408,6 @@ fun FlashScreen(
     var flashResult by remember { mutableStateOf<AxeronPluginService.FlashResult?>(null) }
 
     LaunchedEffect(pendingFlashIt) {
-        Log.d("FlashScreen", "flashing: $flashing")
         if (pendingFlashIt == null || text.isNotEmpty() || hasFlashed) return@LaunchedEffect
         hasFlashed = true
         // No need for an external 'scope' when inside LaunchedEffect

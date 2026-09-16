@@ -38,7 +38,6 @@ class AxManagerProvider : AxeronProvider() {
                     @Suppress("DEPRECATION")
                     extras.getParcelable(EXTRA_BINDER)
                 }?.binder ?: return null
-//                val binder = extras.getParcelableCompat(EXTRA_BINDER, BinderContainer::class.java)?.binder ?: return null
 
                 val countDownLatch = CountDownLatch(1)
                 var reply: Bundle? = Bundle()

@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Base64
-import android.util.Log
 import android.webkit.ConsoleMessage
 import android.webkit.MimeTypeMap
 import android.webkit.ValueCallback
@@ -195,7 +194,6 @@ class WebUIActivity : ComponentActivity() {
                 )
             }.done()
             .addDomain("axeron.js").addHandler { _, _, request ->
-                Log.d("WebUIActivity", "request: " + request.url.toString())
                 return@addHandler WebResourceResponse(
                     "application/javascript",
                     null,
@@ -213,7 +211,6 @@ class WebUIActivity : ComponentActivity() {
                 view: WebView,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                Log.d("WebUIActivity", request.url.toString())
                 return axWebLoader.shouldInterceptRequest(view, request)
             }
 

@@ -365,7 +365,6 @@ fun WirelessDebuggingCard(
                             }
                         launcherDeveloper.launch(intent)
                     }
-                    Log.d("Axora", "launchDevSettings")
                     activateViewModel.setLaunchDevSettings(false)
                 }
             }

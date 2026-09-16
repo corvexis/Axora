@@ -17,9 +17,6 @@ object ShellBinderRequestHandler {
 
         val binder = intent.getBundleExtra("data")?.getBinder("binder") ?: return false
         val axeronBinder = Axeron.getBinder()
-//        if (axeronBinder == null) {
-//            LOGGER.w("Binder not received or AxManager service not running")
-//        }
 
         val data = Parcel.obtain()
         return try {
