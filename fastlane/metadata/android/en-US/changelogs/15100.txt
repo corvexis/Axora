@@ -1,0 +1,12 @@
+### New Features (Customization based update)
+
+- Added Home Banner Feature with GIF support
+- Added adjustable floating bar size
+- Added App Disabling (Third-Party only)
+- Added customizable theme color saturation
+- Added Corner Roundness slider
+- Added double confirmation popup when flashing a add-on
+- Added more color presets
+- Added Soft Reboot (Might not be new but I reimplemented as I lost that version)
+
+Warning: This release uses a new keystore so uninstall the previous version then install this one.
