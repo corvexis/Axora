@@ -11,7 +11,6 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.UserInfo
 import android.ddm.DdmHandleAppName
-import android.os.Binder
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -19,7 +18,6 @@ import android.os.IPowerManager
 import android.os.Looper
 import android.os.Parcel
 import android.os.Parcelable
-import android.os.PowerManager
 import android.os.RemoteException
 import android.os.SELinux
 import android.os.ServiceManager
@@ -78,8 +76,6 @@ open class AxeronService :
     Service<AxeronUserServiceManager, AxeronClientManager, AxeronConfigManager>() {
 
     companion object {
-        private const val IDLE_RELEASE_DELAY_MS = 30_000L
-        private const val IDLE_RECHECK_MS = 30_000L
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -295,63 +291,6 @@ open class AxeronService :
         }
     }
 
-    val lockToken = Binder()
-
-    fun acquire() {
-        LOGGER.i("Acquire wakelock")
-        try {
-            val flags = PowerManager.PARTIAL_WAKE_LOCK
-            val tag = "axeron::wakelock"
-            val pkg = "axeron_server"
-            val uid = Os.getuid()
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                powerManager.get().acquireWakeLockWithUid(lockToken, flags, tag, pkg, uid, 0, null)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                powerManager.get().acquireWakeLockWithUid(lockToken, flags, tag, pkg, uid, 0)
-            } else {
-                powerManager.get().acquireWakeLockWithUid(lockToken, flags, tag, pkg, uid)
-            }
-            LOGGER.i("Acquire wakelock success")
-        } catch (e: Exception) {
-            LOGGER.e("Acquire wakelock failed", e)
-        }
-    }
-
-    fun release() {
-        LOGGER.i("Release wakelock")
-        try {
-            powerManager.get().releaseWakeLock(lockToken, 0)
-            LOGGER.i("Release wakelock success")
-        } catch (e: Exception) {
-            LOGGER.e("Release wakelock failed", e)
-        }
-    }
-
-    @Volatile
-    private var wakeHeld = false
-
-    private val idleWakelockRunnable: Runnable = Runnable {
-        if (ProcessPoolManager.getInstance().isAnyProcessAlive()) {
-            mainHandler.postDelayed(idleWakelockRunnable, IDLE_RECHECK_MS)
-        } else if (wakeHeld) {
-            wakeHeld = false
-            release()
-            LOGGER.i("Idle wakelock released (no live child process)")
-        }
-    }
-
-    private fun ensureWakelockActive() {
-        if (!wakeHeld) {
-            wakeHeld = true
-            acquire()
-        } else {
-            LOGGER.v("Wakelock already held")
-        }
-        mainHandler.removeCallbacks(idleWakelockRunnable)
-        mainHandler.postDelayed(idleWakelockRunnable, IDLE_RELEASE_DELAY_MS)
-    }
-
     override fun onCreateUserServiceManager(): AxeronUserServiceManager {
         return AxeronUserServiceManager(getEnvironment(TYPE_ENV)?.getEnv())
     }
@@ -433,27 +372,6 @@ open class AxeronService :
         mainHandler.post {
             sendBinderToClient()
             sendBinderToManager()
-        }
-
-        ensureWakelockActive()
-
-        // Backup binder delivery. The observer-driven push is best-effort and is not always
-        // re-triggered after the manager is force-stopped, so the manager can also ask us for
-        // the binder directly. This needs a Context, and a server spawned by app_process has
-        // none - getContext() has to bootstrap an ActivityThread first. That is heavy and can
-        // throw, so it is deferred onto its own thread and fully guarded: the primary fix is
-        // the dedup pruning in BinderSender, and this must never be able to take the server
-        // down if the bootstrap does not work out.
-        Thread(Runnable { registerBinderRequestReceiver() }, "axeron-binder-request").apply {
-            isDaemon = true
-        }.start()
-    }
-
-    private fun registerBinderRequestReceiver() {
-        runCatching {
-            BinderSender.registerBinderRequestReceiver(getContext(), asInterface(this))
-        }.onFailure {
-            LOGGER.w(it, "on-demand binder request receiver unavailable")
         }
     }
 
@@ -598,8 +516,6 @@ open class AxeronService :
 
         pool.registerProcess(process)
 
-        ensureWakelockActive()
-
         val clientRecord = clientManager.findClient(getCallingUid(), getCallingPid())
         val token = clientRecord?.client?.asBinder()
 
@@ -631,8 +547,6 @@ open class AxeronService :
         }
 
         pool.registerProcess(process, 0)
-
-        ensureWakelockActive()
 
         return RemoteProcessHolder(process, null)
     }
@@ -883,13 +797,6 @@ open class AxeronService :
 
     @Throws(RemoteException::class)
     override fun dispatchPackageChanged(intent: Intent?) {
-    }
-
-    override fun exit() {
-        wakeHeld = false
-        mainHandler.removeCallbacks(idleWakelockRunnable)
-        release()
-        super.exit()
     }
 
     override fun getApplications(userId: Int): ParcelableListSlice<PackageInfo?> {

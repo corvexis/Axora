@@ -285,8 +285,7 @@ object AdbStarter {
         }.onFailure {
             Log.e(
                 TAG,
-                "AdbClient failed",
-                it
+                "AdbClient failed: ${it.javaClass.simpleName}"
             )
             result(AdbStateInfo.Failed(context.getString(R.string.failed_to_connect_adb_client)))
         }
@@ -319,7 +318,7 @@ object AdbStarter {
             Log.d(TAG, "Stop TCP success")
             result(AdbStateInfo.Success(context.getString(R.string.adb_tcp_stopped)))
         }.onFailure {
-            Log.e(TAG, "Stop TCP failed", it)
+            Log.e(TAG, "Stop TCP failed: ${it.javaClass.simpleName}")
             result(AdbStateInfo.Failed(context.getString(R.string.failed_to_stop_adb_tcp) + ": " + it.message))
         }
     }

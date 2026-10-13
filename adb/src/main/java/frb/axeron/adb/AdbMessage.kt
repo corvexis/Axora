@@ -101,7 +101,7 @@ class AdbMessage(
             AdbProtocol.A_STLS -> "A_STLS"
             else -> command.toString()
         }
-        return "command=$commandString, arg0=$arg0, arg1=$arg1, data_length=$data_length, data_crc32=$data_crc32, magic=$magic, data=${data?.contentToString()}"
+        return "command=$commandString, arg0=$arg0, arg1=$arg1, data_length=$data_length, data_crc32=$data_crc32, magic=$magic, data_size=${data?.size ?: 0}"
     }
 
     companion object {

@@ -288,7 +288,13 @@ object Igniter {
 
     private fun execWait(cmd: Array<String>): Int =
         try {
-            Runtime.getRuntime().exec(cmd).waitFor()
+            val process = ProcessBuilder(*cmd).redirectErrorStream(true).start()
+            val buffer = ByteArray(8192)
+            process.inputStream.use { input ->
+                while (input.read(buffer) != -1) {
+                }
+            }
+            process.waitFor()
         } catch (_: Exception) {
             -1
         }
