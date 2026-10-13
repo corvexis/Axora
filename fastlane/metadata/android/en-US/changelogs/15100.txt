@@ -1,12 +1,21 @@
-### New Features (Customization based update)
+### **v1.5.1 r377**
 
-- Added Home Banner Feature with GIF support
-- Added adjustable floating bar size
-- Added App Disabling (Third-Party only)
-- Added customizable theme color saturation
-- Added Corner Roundness slider
-- Added double confirmation popup when flashing a add-on
-- Added more color presets
-- Added Soft Reboot (Might not be new but I reimplemented as I lost that version)
+### New & improved
+- Home screen rework — refreshed layout, metric cards and quick actions with refined spacing and palette-driven animated accents.
+- Settings reorganized — five category cards (Connection / Appearance / Activation / Path / Other) now open dedicated screens; the search box still filters results inline.
+- Redesigned floating pill bottom bar — fully-rounded capsule shape with a circular active indicator.
+- Updated appearance settings — theme plumbing, color dialogs and snackbars overhauled; new strings (auto-restart, clear commands) plus translations.
 
-Warning: This release uses a new keystore so uninstall the previous version then install this one.
+### Activation / binder reliability
+- Fixed the "server running but shows Need to Activate" state caused by the server binder being intercepted (Shizuku companion) — the manager now always gets the server binder directly.
+- Reworked binder delivery — on-demand binder request with bounded retry, automatic re-push when the manager process returns, skip force-stopped packages, plus proof-of-death liveness checks and health-worker/auto-restart refinements.
+- Hardened binder contract — descriptor/interface guard when receiving binders.
+
+### Fixes
+- ADB pairing leak — the pairing client is now always closed, releasing the socket and native SPAKE2/AES context on success, failure, and cancellation. @Sehan64 
+- Plugin/add-on startup hang — script stdout/stderr are fully drained before waiting, so scripts printing more than 64 KB can no longer deadlock startup. @Sehan64 
+- No more secret leakage in logs — ADB auth tokens/signatures removed from exception messages; adb failures log the error class only. Thanks @Sehan64 
+- Removed the server's unconditional wake-lock hold; verbose logging now only happens in debug builds.
+CI / tooling @Sehan64 
+- New GitHub Actions workflow (build-apk.yml) builds and uploads the debug APK on pushes/PRs to main — with the broken setup-android action replaced by direct sdkmanager installs (NDK, CMake, platform, build-tools). @Sehan64 
+- Bumped the api submodule (Axeron-API#1): binder interface guard, direct binder-request handoff, server liveness probe, start-time sentinel, and theme-scale preference.
