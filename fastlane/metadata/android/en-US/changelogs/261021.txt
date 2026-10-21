@@ -1,0 +1,58 @@
+### v26.10.21 - 261021.r380
+
+### New Features
+
+- Toggle Shortcuts — create reusable switches for:
+- Global, Secure, and System settings
+- Android properties
+- Axeron environment values
+- Add custom labels, key suggestions, on/off values, validation, duplicate detection, current-value display, editing, and confirmed deletion.
+- Toggles persist across restarts and only change the configured property—deleting a toggle does not change the current value.
+- Access Toggle Shortcuts from Settings → Other, the Settings Editor toolbar, or the Home → Toggles quick action.
+- Create a toggle directly from an existing Settings Editor row, pre-filled with its type, key, and value.
+- QuickShell log search — search visible output, highlight matches, jump between results with previous/next controls, see a match counter, and close search with Back.
+- QuickShell expandable action FAB — Search and Save actions now live in an expandable floating control that hides while scrolling.
+- Custom WebUI shortcuts — choose a shortcut name and custom icon, with fallback to the add-on banner and then the Axora icon.
+- Existing pinned shortcuts are updated instead of duplicated.
+- Custom icons are cropped to a squircle and can be reset later.
+- Shortcut creation reports unsupported launchers and failures instead of failing silently.
+- Swipeable main tabs — Home, Apps, Privilege, Add-ons, and Settings now use a horizontal pager.
+- Tapping a tab from a detail screen returns to that tab’s root.
+- Tab visibility updates with server and Shizuku state.
+- Home QuickShell FAB and a new Toggles quick action.
+- Privilege Manager filters — default view shows apps that can request Axora privilege, with a filter action to show all apps.
+- Added an empty state when no apps can request privilege.
+- Home server status pill — consolidated version code, uptime, PID, and UID display.
+- Updated branding — new Axora logo and monochrome adaptive launcher icon.
+Improvements
+- WebUI now shows a loading state while waiting for the Axora binder, retries for up to five seconds, and offers an Open Axora action when the service is unavailable.
+- WebUI now reports missing, removed, disabled, and no-WebUI add-ons with clear messages instead of a blank screen.
+- WebUI shows a toast when the Axora service binder dies.
+- WebUI WebView teardown is safer during activity shutdown.
+- Uninstalling an add-on now clears its saved shortcut name and custom icon data.
+- QuickShell logs and session state now live in the shared view model, so they survive navigation between tabs/screens.
+- QuickShell output handling is more reliable for ANSI screen updates, carriage-return progress, and streamed output.
+- QuickShell only auto-scrolls when already near the bottom, so reading older output is not interrupted.
+- Privilege loading is deduplicated, skips system/self apps, and only runs when both the server and Shizuku are active.
+- Home and Settings floating buttons are positioned above the floating bottom bar.
+- Added translations for the new controls in Japanese, Simplified Chinese, and Traditional Chinese.
+
+### Bug Fixes
+
+- Fixed the Home privilege count briefly showing zero before the app scan completed; the last known count is now cached and shown immediately.
+- Fixed privilege detection for apps already granted Axora permission outside the manager by checking runtime permission state when no stored config entry exists.
+- Fixed QuickShell logs being lost or re-collected when leaving and returning to the screen.
+- Fixed QuickShell search and output filtering to respect the selected output types.
+- Fixed Home banner GIF rendering so animation starts and stops with the banner and the image is decoded once.
+- Fixed Settings Editor FAB overlap with the floating bottom bar.
+- Fixed WebUI launch failures when the Axora service was still starting.
+- Fixed stale WebUI shortcut metadata after add-on removal.
+- Fixed Fastlane changelog generation to use the explicit apiVersionCode, preventing incorrect filenames for date-style version codes.
+
+### Maintenance
+
+- Version bumped to 26.10.21 / 261021.
+- API and server-shared version metadata synchronized.
+- Reignite DEX regenerated.
+
+**Full Changelog**: https://github.com/corvexis/Axora/compare/Overhaul_and_Fixes...26.10.21
