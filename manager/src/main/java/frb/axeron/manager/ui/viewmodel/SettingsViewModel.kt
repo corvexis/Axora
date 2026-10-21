@@ -1,15 +1,19 @@
 package frb.axeron.manager.ui.viewmodel
 
 import android.app.Application
+import android.graphics.drawable.Drawable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import coil.Coil
+import coil.request.ImageRequest
 import frb.axeron.api.core.AxeronSettings
 import frb.axeron.manager.ui.theme.basePrimaryDefault
 import frb.axeron.manager.ui.theme.toHexString
+import java.io.File
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -273,18 +277,46 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
         private set
 
+    var bannerDrawable by mutableStateOf<Drawable?>(null)
+        private set
+
+    init {
+        loadBannerDrawable(bannerImagePath)
+    }
+
+    private fun loadBannerDrawable(path: String?) {
+        if (path == null) {
+            bannerDrawable = null
+            return
+        }
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val request = ImageRequest.Builder(context)
+                .data(File(path))
+                .size(BANNER_TARGET_SIZE)
+                .build()
+            bannerDrawable = Coil.imageLoader(context).execute(request).drawable
+        }
+    }
+
     fun setBannerImage(path: String) {
         viewModelScope.launch {
             bannerImagePath = path
             AxeronSettings.setHomeBanner(path)
+            loadBannerDrawable(path)
         }
     }
 
     fun removeBannerImage() {
         viewModelScope.launch {
             bannerImagePath = null
+            bannerDrawable = null
             AxeronSettings.removeHomeBanner()
         }
+    }
+
+    companion object {
+        private const val BANNER_TARGET_SIZE = 1440
     }
 
 }

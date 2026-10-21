@@ -1,5 +1,8 @@
 package frb.axeron.manager.ui.screen.plugin
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -24,6 +27,7 @@ import androidx.compose.material.icons.filled.Web
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.Tune
@@ -68,12 +72,12 @@ import frb.axeron.manager.ui.component.ExtraLabel
 import frb.axeron.manager.ui.component.ExtraLabelDefaults
 import frb.axeron.manager.ui.component.SettingsItem
 import frb.axeron.manager.ui.component.SettingsItemType
-import frb.axeron.manager.ui.component.createWebUIShortcut
 import frb.axeron.manager.ui.component.formatSize
 import frb.axeron.manager.ui.component.rememberConfirmDialog
 import frb.axeron.manager.ui.component.rememberLoadingDialog
 import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.SettingsViewModel
+import frb.axeron.manager.ui.webui.WebUIShortcutHelper
 import frb.axeron.server.PluginInfo
 import kotlinx.coroutines.launch
 
@@ -82,9 +86,68 @@ import kotlinx.coroutines.launch
 fun PluginConfig(
     showDialog: Boolean,
     plugin: PluginInfo,
+    bannerData: ByteArray?,
     onDismissRequest: () -> Unit
 ) {
     if (showDialog) {
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        var showShortcutDialog by remember { mutableStateOf(false) }
+        var hasCustomIcon by remember(plugin.prop.id) {
+            mutableStateOf(WebUIShortcutHelper.hasCustomIcon(context, plugin.prop.id))
+        }
+
+        val iconDescription = when {
+            hasCustomIcon -> stringResource(R.string.webui_shortcut_icon_custom)
+            plugin.prop.banner.isNotBlank() -> stringResource(R.string.webui_shortcut_icon_banner)
+            else -> stringResource(R.string.webui_shortcut_icon_default)
+        }
+
+        val iconPicker = rememberLauncherForActivityResult(
+            ActivityResultContracts.GetContent()
+        ) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch {
+                val bitmap = WebUIShortcutHelper.saveCustomIconFromUri(
+                    context,
+                    plugin.prop.id,
+                    uri
+                )
+                if (bitmap == null) {
+                    Toast.makeText(
+                        context,
+                        R.string.webui_shortcut_icon_failed,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
+                }
+
+                hasCustomIcon = true
+                val result = WebUIShortcutHelper.updatePinnedShortcut(
+                    context,
+                    plugin,
+                    bannerData
+                )
+                val message = if (result == WebUIShortcutHelper.ShortcutResult.FAILED) {
+                    R.string.webui_shortcut_icon_failed
+                } else {
+                    R.string.webui_shortcut_icon_saved
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        if (showShortcutDialog) {
+            WebUIShortcutDialog(
+                plugin = plugin,
+                bannerData = bannerData,
+                onDismiss = { showShortcutDialog = false },
+                onShortcutSaved = {
+                    hasCustomIcon = WebUIShortcutHelper.hasCustomIcon(context, plugin.prop.id)
+                }
+            )
+        }
+
         ModalBottomSheet(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             onDismissRequest = onDismissRequest
@@ -95,8 +158,6 @@ fun PluginConfig(
                     .padding(10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val context = LocalContext.current
-
                 SettingsItem(
                     label = stringResource(R.string.web_ui_configuration),
                     iconVector = Icons.Outlined.Web,
@@ -112,16 +173,51 @@ fun PluginConfig(
                         iconVector = Icons.Outlined.Home,
                         label = stringResource(R.string.add_web_ui_shortcut),
                         description = stringResource(R.string.add_web_ui_shortcut_msg),
-                        onClick = {
-                            createWebUIShortcut(
-                                context = context,
-                                plugin = plugin
-                            )
-                        }
+                        onClick = { showShortcutDialog = true }
                     )
+                    SettingsItem(
+                        type = SettingsItemType.CHILD,
+                        enabled = plugin.hasWebUi,
+                        iconVector = Icons.Outlined.Image,
+                        label = stringResource(R.string.webui_shortcut_icon),
+                        description = iconDescription,
+                        onClick = { iconPicker.launch("image/*") }
+                    )
+                    if (hasCustomIcon) {
+                        SettingsItem(
+                            type = SettingsItemType.CHILD,
+                            enabled = plugin.hasWebUi,
+                            iconVector = Icons.Outlined.Restore,
+                            label = stringResource(R.string.webui_shortcut_icon_reset),
+                            description = stringResource(R.string.webui_shortcut_icon_reset_desc),
+                            onClick = {
+                                scope.launch {
+                                    WebUIShortcutHelper.deleteCustomIcon(
+                                        context,
+                                        plugin.prop.id
+                                    )
+                                    hasCustomIcon = false
+                                    val result = WebUIShortcutHelper.updatePinnedShortcut(
+                                        context,
+                                        plugin,
+                                        bannerData
+                                    )
+                                    val message =
+                                        if (result == WebUIShortcutHelper.ShortcutResult.FAILED) {
+                                            R.string.webui_shortcut_icon_failed
+                                        } else {
+                                            R.string.webui_shortcut_icon_saved
+                                        }
+                                    Toast.makeText(
+                                        context,
+                                        message,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        )
+                    }
                 }
-
-
             }
         }
     }
@@ -149,7 +245,8 @@ fun PluginItem(
 
     PluginConfig(
         showExtraSetDialog,
-        plugin
+        plugin,
+        bannerData
     ) {
         showExtraSetDialog = false
     }

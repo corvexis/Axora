@@ -13,8 +13,7 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.spring
+
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -29,10 +28,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -52,11 +54,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.pm.ShortcutInfoCompat
@@ -64,7 +67,7 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
-import androidx.navigation.NavHostController
+
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -73,17 +76,21 @@ import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ActivateScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ExecutePluginActionScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.QuickShellScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsCategoryScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.ramcosta.composedestinations.generated.destinations.TabsPlaceholderDestination
+import com.ramcosta.composedestinations.generated.destinations.ToggleShortcutsScreenDestination
 import com.ramcosta.composedestinations.navigation.dependency
-import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
 import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
-import frb.axeron.api.AxeronInfo
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.navigation.BottomBarDestination
+import frb.axeron.manager.ui.navigation.LocalTabSelected
+import frb.axeron.manager.ui.screen.DisableAppsScreen
 import frb.axeron.manager.ui.screen.FlashIt
+import frb.axeron.manager.ui.screen.HomeScreen
+import frb.axeron.manager.ui.screen.PrivilegeScreen
+import frb.axeron.manager.ui.screen.SettingsScreen
+import frb.axeron.manager.ui.screen.plugin.PluginScreen
 import frb.axeron.manager.ui.theme.AxManagerTheme
 import frb.axeron.manager.ui.util.LocalBottomBarHidden
 import frb.axeron.manager.ui.util.LocalSnackbarHost
@@ -93,9 +100,12 @@ import frb.axeron.manager.ui.viewmodel.AppsViewModel
 import frb.axeron.manager.ui.viewmodel.DisableAppsViewModel
 import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.PrivilegeViewModel
+import frb.axeron.manager.ui.viewmodel.QuickShellViewModel
 import frb.axeron.manager.ui.viewmodel.SettingsViewModel
+import frb.axeron.manager.ui.viewmodel.ToggleViewModel
 import frb.axeron.manager.ui.viewmodel.ViewModelGlobal
 import frb.axeron.server.PluginInstaller
+import kotlinx.coroutines.launch
 
 class AxActivity : ComponentActivity() {
 
@@ -154,7 +164,7 @@ class AxActivity : ComponentActivity() {
         val navigator = navController.rememberDestinationsNavigator()
         val currentDestination = navController.currentBackStackEntryAsState().value?.destination
 
-        val context = LocalContext.current
+
 
         val activateViewModel: ActivateViewModel = viewModel<ActivateViewModel>()
 
@@ -162,8 +172,50 @@ class AxActivity : ComponentActivity() {
         val disableAppsViewModel: DisableAppsViewModel = viewModel<DisableAppsViewModel>()
         val privilegeViewModel: PrivilegeViewModel = viewModel<PrivilegeViewModel>()
         val pluginViewModel: PluginViewModel = viewModel<PluginViewModel>()
+        val quickShellViewModel: QuickShellViewModel = viewModel<QuickShellViewModel>()
+        val toggleViewModel: ToggleViewModel = viewModel<ToggleViewModel>()
 
         val axeronInfo = activateViewModel.axeronInfo
+        val isShizukuActive = activateViewModel.isShizukuActive
+
+        val viewModelGlobal = remember {
+            ViewModelGlobal(
+                settingsViewModel = settingsViewModel,
+                appsViewModel = appsViewModel,
+                disableAppsViewModel = disableAppsViewModel,
+                activateViewModel = activateViewModel,
+                pluginViewModel = pluginViewModel,
+                privilegeViewModel = privilegeViewModel,
+                quickShellViewModel = quickShellViewModel,
+                toggleViewModel = toggleViewModel
+            )
+        }
+
+        val visibleTabs = remember(axeronInfo, isShizukuActive) {
+            BottomBarDestination.entries.filter { dest ->
+                (axeronInfo.isRunning() || !dest.needAxeron) &&
+                    !(dest == BottomBarDestination.Privilege && !isShizukuActive)
+            }
+        }
+
+        val pagerState = rememberPagerState(pageCount = { visibleTabs.size })
+        val scope = rememberCoroutineScope()
+
+        val onTabClick: (BottomBarDestination) -> Unit = { dest ->
+            val index = visibleTabs.indexOf(dest)
+            if (index >= 0) {
+                if (currentDestination?.route != TabsPlaceholderDestination.route) {
+                    navController.popBackStack(TabsPlaceholderDestination.route, inclusive = false)
+                }
+                scope.launch { pagerState.scrollToPage(index) }
+            }
+        }
+
+        LaunchedEffect(visibleTabs.size) {
+            if (pagerState.currentPage > visibleTabs.size - 1) {
+                pagerState.scrollToPage(visibleTabs.size - 1)
+            }
+        }
 
         LaunchedEffect(intentState) {
             if (intentState == null) return@LaunchedEffect
@@ -171,12 +223,13 @@ class AxActivity : ComponentActivity() {
             when (intentState!!.action) {
                 OPEN_QUICK_SHELL -> {
                     if (axeronInfo.isRunning()) {
-                        navigator.navigate(HomeScreenDestination()) {
-                            popUpTo(NavGraphs.root) {
-                                saveState = true
-                            }
-                        }
-                        if (navController.currentDestination?.route == HomeScreenDestination.route) {
+                        navController.popBackStack(
+                            TabsPlaceholderDestination.route,
+                            inclusive = false
+                        )
+                        scope.launch {
+                            val homeIndex = visibleTabs.indexOf(BottomBarDestination.Home)
+                            if (homeIndex >= 0) pagerState.scrollToPage(homeIndex)
                             navigator.navigate(QuickShellScreenDestination())
                         }
                     }
@@ -221,19 +274,13 @@ class AxActivity : ComponentActivity() {
                 pluginViewModel.fetchModuleList()
                 appsViewModel.loadInstalledApps()
                 disableAppsViewModel.mergeNew()
-                privilegeViewModel.loadInstalledApps()
             }
         }
 
-        val viewModelGlobal = remember {
-            ViewModelGlobal(
-                settingsViewModel = settingsViewModel,
-                appsViewModel = appsViewModel,
-                disableAppsViewModel = disableAppsViewModel,
-                activateViewModel = activateViewModel,
-                pluginViewModel = pluginViewModel,
-                privilegeViewModel = privilegeViewModel
-            )
+        LaunchedEffect(axeronInfo, isShizukuActive) {
+            if (axeronInfo.isRunning() && isShizukuActive) {
+                privilegeViewModel.loadInstalledApps(refresh = false)
+            }
         }
 
         val showBottomBar = when (currentDestination?.route) {
@@ -241,6 +288,7 @@ class AxActivity : ComponentActivity() {
             FlashScreenDestination.route -> false
             ExecutePluginActionScreenDestination.route -> false
             SettingsCategoryScreenDestination.route -> false
+            ToggleShortcutsScreenDestination.route -> false
             else -> true
         }
 
@@ -250,8 +298,8 @@ class AxActivity : ComponentActivity() {
             bottomBarHidden.value = false
         }
 
-        val bottomBarRoutes = remember {
-            BottomBarDestination.entries.map { it.direction.route }.toSet()
+        val selectedTab = visibleTabs.getOrElse(pagerState.currentPage) {
+            BottomBarDestination.Home
         }
 
         val pluginUpdateCount by pluginViewModel.updateCount.collectAsState()
@@ -259,21 +307,41 @@ class AxActivity : ComponentActivity() {
             CompositionLocalProvider(
                 LocalSnackbarHost provides snackBarHostState,
                 LocalBottomBarHidden provides bottomBarHidden,
+                LocalTabSelected provides onTabClick,
             ) {
                 Scaffold(
                     contentWindowInsets = WindowInsets()
                 ) { innerPadding ->
-                    DestinationsNavHost(
-                        modifier = Modifier.padding(innerPadding),
-                        navGraph = NavGraphs.root,
-                        navController = navController,
-                        dependenciesContainerBuilder = {
-                            dependency(viewModelGlobal)
-                        },
-                        defaultTransitions = remember(bottomBarRoutes) {
-                            createNavTransitions(bottomBarRoutes)
+                    Box(modifier = Modifier.padding(innerPadding)) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                            beyondViewportPageCount = 1,
+                            key = { page -> visibleTabs.getOrNull(page) ?: page },
+                            userScrollEnabled = currentDestination?.route == TabsPlaceholderDestination.route
+                        ) { page ->
+                            when (visibleTabs.getOrNull(page)) {
+                                BottomBarDestination.Home -> HomeScreen(navigator, viewModelGlobal)
+                                BottomBarDestination.Apps -> DisableAppsScreen(navigator, viewModelGlobal)
+                                BottomBarDestination.Privilege -> PrivilegeScreen(navigator, viewModelGlobal)
+                                BottomBarDestination.Plugin -> PluginScreen(navigator, viewModelGlobal)
+                                BottomBarDestination.Settings -> SettingsScreen(navigator, viewModelGlobal)
+                                null -> Unit
+                            }
                         }
-                    )
+
+                        DestinationsNavHost(
+                            modifier = Modifier.fillMaxSize(),
+                            navGraph = NavGraphs.root,
+                            navController = navController,
+                            dependenciesContainerBuilder = {
+                                dependency(viewModelGlobal)
+                            },
+                            defaultTransitions = remember {
+                                createPushTransitions()
+                            }
+                        )
+                    }
                 }
 
                 AnimatedVisibility(
@@ -289,12 +357,11 @@ class AxActivity : ComponentActivity() {
                         contentAlignment = Alignment.BottomCenter
                     ) {
                         BottomBar(
-                            navController,
-                            navigator,
-                            activateViewModel.axeronInfo,
-                            activateViewModel.isShizukuActive,
-                            pluginUpdateCount,
-                            settingsViewModel.bottomBarScale
+                            tabs = visibleTabs,
+                            selected = selectedTab,
+                            onTabClick = onTabClick,
+                            moduleUpdateCount = pluginUpdateCount,
+                            bottomBarScale = settingsViewModel.bottomBarScale
                         )
                     }
                 }
@@ -302,86 +369,31 @@ class AxActivity : ComponentActivity() {
         }
     }
 
-    private fun createNavTransitions(
-        bottomBarRoutes: Set<String>
-    ): NavHostAnimatedDestinationStyle {
+    private fun createPushTransitions(): NavHostAnimatedDestinationStyle {
         return object : NavHostAnimatedDestinationStyle() {
             override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-                if (targetState.destination.route !in bottomBarRoutes) {
-                    slideInHorizontally(initialOffsetX = { it })
-                } else {
-                    val initialRoute = initialState.destination.route
-                    val targetRoute = targetState.destination.route
-                    val initialIndex = BottomBarDestination.entries.indexOfFirst { it.direction.route == initialRoute }
-                    val targetIndex = BottomBarDestination.entries.indexOfFirst { it.direction.route == targetRoute }
-
-                    val stiffness = 300f
-                    val duration300 = 300
-
-                    if (initialIndex != -1 && targetIndex != -1) {
-                        if (targetIndex > initialIndex) {
-                            slideInHorizontally(animationSpec = spring(dampingRatio = 0.8f, stiffness = stiffness), initialOffsetX = { width -> width })
-                        } else {
-                            slideInHorizontally(animationSpec = spring(dampingRatio = 0.8f, stiffness = stiffness), initialOffsetX = { width -> -width })
-                        }
-                    } else {
-                        fadeIn(animationSpec = tween(340))
-                    }
-                }
+                slideInHorizontally(initialOffsetX = { it })
             }
 
             override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-                if (initialState.destination.route in bottomBarRoutes && targetState.destination.route !in bottomBarRoutes) {
-                    slideOutHorizontally(targetOffsetX = { -it / 4 }) + fadeOut()
-                } else {
-                    if (initialState.destination.route in bottomBarRoutes && targetState.destination.route in bottomBarRoutes) {
-                        val initialRoute = initialState.destination.route
-                        val targetRoute = targetState.destination.route
-                        val initialIndex = BottomBarDestination.entries.indexOfFirst { it.direction.route == initialRoute }
-                        val targetIndex = BottomBarDestination.entries.indexOfFirst { it.direction.route == targetRoute }
-
-                        val stiffness = 300f
-                        val duration300 = 300
-
-                        if (initialIndex != -1 && targetIndex != -1) {
-                            if (targetIndex > initialIndex) {
-                                slideOutHorizontally(animationSpec = spring(dampingRatio = 0.8f, stiffness = stiffness), targetOffsetX = { width -> -width })
-                            } else {
-                                slideOutHorizontally(animationSpec = spring(dampingRatio = 0.8f, stiffness = stiffness), targetOffsetX = { width -> width })
-                            }
-                        } else {
-                            fadeOut(animationSpec = tween(340))
-                        }
-                    } else {
-                        fadeOut(animationSpec = tween(340))
-                    }
-                }
+                slideOutHorizontally(targetOffsetX = { -it / 4 }) + fadeOut()
             }
 
             override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-                if (targetState.destination.route in bottomBarRoutes) {
-                    slideInHorizontally(initialOffsetX = { -it / 4 }) + fadeIn()
-                } else {
-                    fadeIn(animationSpec = tween(340))
-                }
+                slideInHorizontally(initialOffsetX = { -it / 4 }) + fadeIn()
             }
 
             override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-                if (initialState.destination.route !in bottomBarRoutes) {
-                    scaleOut(targetScale = 0.9f) + fadeOut()
-                } else {
-                    fadeOut(animationSpec = tween(340))
-                }
+                scaleOut(targetScale = 0.9f) + fadeOut()
             }
         }
     }
 
     @Composable
     fun BottomBar(
-        navController: NavHostController,
-        navigator: DestinationsNavigator,
-        axeronServerInfo: AxeronInfo,
-        isShizukuActive: Boolean,
+        tabs: List<BottomBarDestination>,
+        selected: BottomBarDestination,
+        onTabClick: (BottomBarDestination) -> Unit,
         moduleUpdateCount: Int,
         bottomBarScale: Float
     ) {
@@ -413,65 +425,48 @@ class AxActivity : ComponentActivity() {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp * bottomBarScale)
                 ) {
-                    BottomBarDestination.entries
-                        .forEach { destination ->
-                            if (!axeronServerInfo.isRunning() && destination.needAxeron) return@forEach
-                            if (destination == BottomBarDestination.Privilege && !isShizukuActive) return@forEach
+                    tabs.forEach { destination ->
+                        val isSelected = destination == selected
+                        val label = stringResource(id = destination.labelId)
 
-                            val isCurrentDestOnBackStack by navController.isRouteOnBackStackAsState(
-                                destination.direction
-                            )
-                            val label = stringResource(id = destination.labelId)
-
-                            // The item is a fixed square (icon + uniform padding), so a circle
-                            // indicator always stays a circle at any scale. A 12dp rounded rect
-                            // read as a lopsided blob against the pill's own curvature.
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isCurrentDestOnBackStack)
-                                            MaterialTheme.colorScheme.secondaryContainer
-                                        else Color.Transparent
-                                    )
-                                    .clickable {
-                                        if (isCurrentDestOnBackStack) {
-                                            navigator.popBackStack(destination.direction, false)
-                                        }
-                                        navigator.navigate(destination.direction) {
-                                            popUpTo(NavGraphs.root) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                    .padding(12.dp * bottomBarScale),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (destination == BottomBarDestination.Plugin && moduleUpdateCount > 0) {
-                                    BadgedBox(badge = { Badge { Text(moduleUpdateCount.toString()) } }) {
-                                        Icon(
-                                            imageVector = if (isCurrentDestOnBackStack) destination.iconSelected else destination.iconNotSelected,
-                                            contentDescription = label,
-                                            tint = if (isCurrentDestOnBackStack)
-                                                MaterialTheme.colorScheme.onSecondaryContainer
-                                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(24.dp * bottomBarScale)
-                                        )
-                                    }
-                                } else {
+                        // The item is a fixed square (icon + uniform padding), so a circle
+                        // indicator always stays a circle at any scale. A 12dp rounded rect
+                        // read as a lopsided blob against the pill's own curvature.
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected)
+                                        MaterialTheme.colorScheme.secondaryContainer
+                                    else Color.Transparent
+                                )
+                                .clickable { onTabClick(destination) }
+                                .padding(12.dp * bottomBarScale),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (destination == BottomBarDestination.Plugin && moduleUpdateCount > 0) {
+                                BadgedBox(badge = { Badge { Text(moduleUpdateCount.toString()) } }) {
                                     Icon(
-                                        imageVector = if (isCurrentDestOnBackStack) destination.iconSelected else destination.iconNotSelected,
+                                        imageVector = if (isSelected) destination.iconSelected else destination.iconNotSelected,
                                         contentDescription = label,
-                                        tint = if (isCurrentDestOnBackStack)
+                                        tint = if (isSelected)
                                             MaterialTheme.colorScheme.onSecondaryContainer
                                         else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(24.dp * bottomBarScale)
                                     )
                                 }
+                            } else {
+                                Icon(
+                                    imageVector = if (isSelected) destination.iconSelected else destination.iconNotSelected,
+                                    contentDescription = label,
+                                    tint = if (isSelected)
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp * bottomBarScale)
+                                )
                             }
                         }
+                    }
                 }
             }
         }

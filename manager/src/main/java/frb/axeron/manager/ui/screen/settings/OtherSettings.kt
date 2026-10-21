@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Web
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
 import com.ramcosta.composedestinations.generated.destinations.SettingsEditorScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ToggleShortcutsScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import frb.axeron.api.core.AxeronSettings
 import frb.axeron.manager.R
@@ -48,6 +50,11 @@ fun OtherSettings(
     val settingsEditorTitle = stringResource(R.string.settings_editor)
     val showSettingsEditor = axeronRunning && (matchCategory || shouldShow(searchText, settingsEditorTitle))
 
+    val toggleShortcutsTitle = stringResource(R.string.toggle_shortcuts)
+    val toggleShortcutsSummary = stringResource(R.string.toggle_shortcuts_summary)
+    val showToggleShortcuts = axeronRunning && (matchCategory ||
+        shouldShow(searchText, toggleShortcutsTitle, toggleShortcutsSummary))
+
     val developerModeTitle = stringResource(R.string.enable_developer_mode)
     val developerModeSummary = stringResource(R.string.enable_developer_mode_msg)
     val showDeveloperMode = matchCategory || shouldShow(searchText, developerModeTitle, developerModeSummary)
@@ -67,7 +74,8 @@ fun OtherSettings(
     val gimmickGuardSummary = stringResource(R.string.gimmick_guard_summary)
     val showGimmickGuard = matchCategory || shouldShow(searchText, gimmickGuardTitle, gimmickGuardSummary)
 
-    val showCategory = showSettingsEditor || showDeveloperMode || showWebDebug || showUpdate || showAutoUpdate || showGimmickGuard
+    val showCategory = showSettingsEditor || showToggleShortcuts || showDeveloperMode || showWebDebug ||
+        showUpdate || showAutoUpdate || showGimmickGuard
 
     var showUpdateDialog by remember { mutableStateOf(false) }
     var autoUpdateCheck by remember { mutableStateOf(prefs.getBoolean("auto_update_check", true)) }
@@ -84,6 +92,17 @@ fun OtherSettings(
                     title = settingsEditorTitle,
                     onClick = {
                         navigator.navigate(SettingsEditorScreenDestination)
+                    }
+                )
+            }
+
+            if (showToggleShortcuts) {
+                ClickableItem(
+                    icon = Icons.Outlined.Tune,
+                    title = toggleShortcutsTitle,
+                    summary = toggleShortcutsSummary,
+                    onClick = {
+                        navigator.navigate(ToggleShortcutsScreenDestination)
                     }
                 )
             }

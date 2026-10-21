@@ -2,12 +2,15 @@ package frb.axeron.manager.ui.webui
 
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Base64
+import android.util.TypedValue
+import android.view.Gravity
 import android.webkit.ConsoleMessage
 import android.webkit.MimeTypeMap
 import android.webkit.ValueCallback
@@ -16,6 +19,9 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
@@ -27,6 +33,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import frb.axeron.api.Axeron
 import frb.axeron.api.core.AxeronSettings
+import frb.axeron.manager.R
+import frb.axeron.manager.service.BinderRequest
+import frb.axeron.manager.ui.AxActivity
 import frb.axeron.manager.ui.viewmodel.AppsViewModel
 import frb.axeron.manager.ui.webui.interfaces.AxWebInterface
 import frb.axeron.manager.ui.webui.interfaces.KsuWebInterface
@@ -35,8 +44,11 @@ import frb.axeron.server.util.AxWebLoader
 import frb.axeron.shared.AxeronApiConstant
 import frb.axeron.shared.PathHelper
 import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
@@ -45,7 +57,7 @@ import java.util.Locale
 
 @SuppressLint("SetJavaScriptEnabled")
 class WebUIActivity : ComponentActivity() {
-    private lateinit var webView: WebView
+    private var webView: WebView? = null
     private lateinit var insets: Insets
     private lateinit var plugin: PluginInfo
 
@@ -57,6 +69,7 @@ class WebUIActivity : ComponentActivity() {
     private var pendingDownloadSuggestedFilename: String? = null
 
     private var insetsContinuation: CancellableContinuation<Unit>? = null
+    private var binderDeadListener: Axeron.OnBinderDeadListener? = null
 
     fun erudaConsole(context: android.content.Context): String {
         return context.assets.open("js/eruda.min.js").bufferedReader().use { it.readText() }
@@ -104,30 +117,122 @@ class WebUIActivity : ComponentActivity() {
                 pendingDownloadSuggestedFilename = null
             }
 
+        showLoading()
+
         lifecycleScope.launch {
-            setupWebView()
+            try {
+                setupWebView()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                showErrorAndFinish(
+                    getString(R.string.webui_plugin_load_failed),
+                    t.message
+                )
+            }
         }
     }
 
+    private fun showLoading() {
+        val density = resources.displayMetrics.density
+        val progress = ProgressBar(this).apply { isIndeterminate = true }
+        val message = TextView(this).apply {
+            setText(R.string.webui_connecting)
+            gravity = Gravity.CENTER
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            setPadding(0, (12 * density).toInt(), 0, 0)
+        }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            addView(
+                progress,
+                LinearLayout.LayoutParams(
+                    (48 * density).toInt(),
+                    (48 * density).toInt()
+                )
+            )
+            addView(message)
+        }
+        setContentView(container)
+    }
+
+    private fun showErrorAndFinish(title: String, message: String? = null) {
+        if (isFinishing || isDestroyed) return
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message?.takeIf { it.isNotBlank() })
+            .setPositiveButton(android.R.string.ok) { _, _ -> finish() }
+            .setOnCancelListener { finish() }
+            .show()
+    }
+
+    private fun showBinderUnavailable() {
+        if (isFinishing || isDestroyed) return
+        AlertDialog.Builder(this)
+            .setTitle(R.string.webui_service_unavailable_title)
+            .setMessage(R.string.webui_service_unavailable)
+            .setPositiveButton(R.string.webui_open_axora) { _, _ ->
+                startActivity(Intent(this, AxActivity::class.java))
+                finish()
+            }
+            .setNegativeButton(android.R.string.cancel) { _, _ -> finish() }
+            .setOnCancelListener { finish() }
+            .show()
+    }
+
     private suspend fun setupWebView() {
-        plugin = Axeron.getPluginById(intent.getStringExtra("id") ?: finishAndRemoveTask().let {
-            Toast.makeText(this, "Add-on ID not found", Toast.LENGTH_SHORT).show()
+        val pluginId = intent.getStringExtra("id")
+        if (pluginId.isNullOrBlank()) {
+            Toast.makeText(this, R.string.webui_plugin_id_missing, Toast.LENGTH_SHORT).show()
+            finish()
             return
-        })
+        }
+
+        if (!BinderRequest.awaitBinder(this)) {
+            showBinderUnavailable()
+            return
+        }
+        if (isFinishing || isDestroyed) return
+
+        val loadedPlugin = withContext(Dispatchers.IO) {
+            runCatching { Axeron.getPluginById(pluginId) }.getOrNull()
+        }
+        if (isFinishing || isDestroyed) return
+        if (loadedPlugin == null) {
+            Toast.makeText(this, R.string.webui_plugin_not_found, Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+        plugin = loadedPlugin
 
         if (!plugin.hasWebUi || plugin.remove || !plugin.enabled) {
             Toast.makeText(
                 this,
                 when {
-                    plugin.remove -> "Add-on removed"
-                    !plugin.enabled -> "Add-on disabled"
-                    else -> "Add-on has no web UI"
+                    plugin.remove -> R.string.webui_plugin_removed
+                    !plugin.enabled -> R.string.webui_plugin_disabled
+                    else -> R.string.webui_plugin_no_web_ui
                 },
                 Toast.LENGTH_SHORT
             ).show()
             finish()
             return
         }
+
+        binderDeadListener = object : Axeron.OnBinderDeadListener {
+            override fun onBinderDead() {
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) {
+                        Toast.makeText(
+                            this@WebUIActivity,
+                            R.string.webui_service_stopped,
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        }.also { Axeron.addBinderDeadListener(it) }
 
         val taskDescription = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ActivityManager.TaskDescription.Builder().setLabel("AxWebUI | ${plugin.prop.name}")
@@ -149,7 +254,7 @@ class WebUIActivity : ComponentActivity() {
 
         insets = Insets(0, 0, 0, 0)
 
-        webView = WebView(this).apply {
+        val webView = WebView(this).apply {
             setBackgroundColor(Color.TRANSPARENT)
             val density = resources.displayMetrics.density
             ViewCompat.setOnApplyWindowInsetsListener(this) { _, windowInsets ->
@@ -166,6 +271,7 @@ class WebUIActivity : ComponentActivity() {
             }
         }
 
+        this.webView = webView
         setContentView(webView)
 
         if (insets == Insets(0, 0, 0, 0)) {
@@ -178,6 +284,8 @@ class WebUIActivity : ComponentActivity() {
                 }
             }
         }
+
+        if (isFinishing || isDestroyed) return
 
         val axPathHandler = AxPathHandler(webRoot) { insets }
         val iconHandler = AppsViewModel.AppInfo.Handler()
@@ -390,11 +498,17 @@ class WebUIActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        webView.apply {
+        binderDeadListener?.let { Axeron.removeBinderDeadListener(it) }
+        binderDeadListener = null
+        filePathCallback = null
+        insetsContinuation = null
+
+        webView?.apply {
             stopLoading()
             removeAllViews()
             destroy()
         }
+        webView = null
         super.onDestroy()
     }
 }

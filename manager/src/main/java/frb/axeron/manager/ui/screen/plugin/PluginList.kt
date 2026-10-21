@@ -43,6 +43,7 @@ import frb.axeron.manager.ui.util.DownloadListener
 import frb.axeron.manager.ui.util.download
 import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.SettingsViewModel
+import frb.axeron.manager.ui.webui.WebUIShortcutHelper
 import frb.axeron.server.PluginInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -174,6 +175,9 @@ fun PluginList(
         }
 
         if (success) {
+            withContext(Dispatchers.IO) {
+                WebUIShortcutHelper.clearShortcutData(context, plugin.prop.id)
+            }
             viewModel.fetchModuleList()
         }
         if (success) {

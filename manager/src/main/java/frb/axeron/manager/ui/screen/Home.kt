@@ -5,10 +5,11 @@ import androidx.compose.runtime.Composable
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import frb.axeron.manager.ui.navigation.LocalTabSelected
 import frb.axeron.manager.ui.viewmodel.ViewModelGlobal
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination<RootGraph>(start = true)
+@Destination<RootGraph>
 @Composable
 fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlobal) {
     HomeCircleScreen(
@@ -16,6 +17,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
         activateViewModel = viewModelGlobal.activateViewModel,
         pluginViewModel = viewModelGlobal.pluginViewModel,
         privilegeViewModel = viewModelGlobal.privilegeViewModel,
-        bannerImagePath = viewModelGlobal.settingsViewModel.bannerImagePath
+        bannerDrawable = viewModelGlobal.settingsViewModel.bannerDrawable,
+        onTabSelected = LocalTabSelected.current
     )
 }

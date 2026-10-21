@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import coil.Coil
 import coil.ImageLoader
+import coil.decode.GifDecoder
 import com.topjohnwu.superuser.Shell
 import frb.axeron.Axerish
 import frb.axeron.api.core.AxeronSettings
@@ -57,7 +58,7 @@ class AxeronApplication : Engine() {
                 .components {
                     add(AppIconKeyer())
                     add(AppIconFetcher.Factory(iconSize, false, context))
-                    add(coil.decode.GifDecoder.Factory())
+                    add(GifDecoder.Factory())
                 }
                 .build()
         )

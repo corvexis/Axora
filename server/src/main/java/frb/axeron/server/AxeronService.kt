@@ -864,6 +864,28 @@ open class AxeronService :
         if (entry != null) {
             return entry.flags and mask
         }
+
+        if ((mask and ConfigManager.MASK_PERMISSION) != 0) {
+            val userId = UserHandleCompat.getUserId(uid)
+            for (packageName in PackageManagerApis.getPackagesForUidNoThrow(uid)) {
+                val pi = PackageManagerApis.getPackageInfoNoThrow(
+                    packageName,
+                    PackageManager.GET_PERMISSIONS.toLong(),
+                    userId
+                ) ?: continue
+                if (pi.requestedPermissions?.contains(PERMISSION) != true) {
+                    continue
+                }
+                val granted = runCatching {
+                    PermissionManagerApis.checkPermission(PERMISSION, uid) ==
+                            PackageManager.PERMISSION_GRANTED
+                }.getOrDefault(false)
+                if (granted) {
+                    return ConfigManager.FLAG_ALLOWED
+                }
+            }
+        }
+
         return 0
     }
 

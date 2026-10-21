@@ -8,6 +8,9 @@ import android.os.Parcel
 import android.util.Log
 import frb.axeron.api.Axeron
 import frb.axeron.server.ServerConstants
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Asks the detached server to hand us its binder.
@@ -30,6 +33,9 @@ object BinderRequest {
      * Transaction code the server answers on. Matches the contract used by ShellLoader.
      */
     private const val CODE_ON_BINDER = 1
+
+    private const val BINDER_RETRY_INTERVAL_MS = 500L
+    private const val DEFAULT_BINDER_TIMEOUT_MS = 5_000L
 
     /**
      * Target for the server's reply. Created once and reused so we never leak a Binder.
@@ -86,6 +92,39 @@ object BinderRequest {
             Log.i(TAG, "requested binder from server")
         } catch (t: Throwable) {
             Log.w(TAG, "binder request failed", t)
+        }
+    }
+
+    suspend fun awaitBinder(
+        context: Context,
+        timeoutMs: Long = DEFAULT_BINDER_TIMEOUT_MS
+    ): Boolean {
+        if (Axeron.pingBinder()) return true
+
+        val received = CompletableDeferred<Unit>()
+        val listener = object : Axeron.OnBinderReceivedListener {
+            override fun onBinderReceived() {
+                if (Axeron.pingBinder()) received.complete(Unit)
+            }
+        }
+
+        Axeron.addBinderReceivedListenerSticky(listener)
+        try {
+            val connected = withTimeoutOrNull(timeoutMs) {
+                while (!Axeron.pingBinder()) {
+                    request(context)
+                    withTimeoutOrNull(BINDER_RETRY_INTERVAL_MS) {
+                        received.await()
+                    }
+                    if (!Axeron.pingBinder() && received.isCompleted) {
+                        delay(BINDER_RETRY_INTERVAL_MS)
+                    }
+                }
+                true
+            }
+            return connected == true || Axeron.pingBinder()
+        } finally {
+            Axeron.removeBinderReceivedListener(listener)
         }
     }
 }

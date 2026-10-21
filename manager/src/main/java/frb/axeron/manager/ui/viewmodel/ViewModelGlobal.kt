@@ -7,5 +7,7 @@ class ViewModelGlobal(
     val disableAppsViewModel: DisableAppsViewModel,
     val privilegeViewModel: PrivilegeViewModel,
     val activateViewModel: ActivateViewModel,
-    val pluginViewModel: PluginViewModel
+    val pluginViewModel: PluginViewModel,
+    val quickShellViewModel: QuickShellViewModel,
+    val toggleViewModel: ToggleViewModel
 )

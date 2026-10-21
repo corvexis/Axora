@@ -1,9 +1,9 @@
 package frb.axeron.manager.ui.screen
 
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.SystemClock
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import android.widget.ImageView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateIntAsState
@@ -14,6 +14,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -41,11 +43,14 @@ import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,19 +74,17 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ramcosta.composedestinations.generated.NavGraphs
+import androidx.compose.ui.viewinterop.AndroidView
 import com.ramcosta.composedestinations.generated.destinations.ActivateScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.QuickShellScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ToggleShortcutsScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import frb.axeron.api.Axeron
 import frb.axeron.api.AxeronCommandSession
@@ -102,7 +105,6 @@ import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.PrivilegeViewModel
 import frb.axeron.manager.ui.theme.HomeTokens
 import frb.axeron.manager.ui.theme.LocalHomeTokens
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -115,7 +117,8 @@ fun HomeCircleScreen(
     activateViewModel: ActivateViewModel,
     pluginViewModel: PluginViewModel,
     privilegeViewModel: PrivilegeViewModel,
-    bannerImagePath: String? = null
+    bannerDrawable: Drawable? = null,
+    onTabSelected: (BottomBarDestination) -> Unit = {}
 ) {
     val context = LocalContext.current
     val prefs = AxeronSettings.getPreferences()
@@ -192,12 +195,38 @@ fun HomeCircleScreen(
         )
     }
 
-    Scaffold { innerPadding ->
+    Scaffold(
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = isRunning,
+                enter = fadeIn() + scaleIn(initialScale = 0.9f),
+                exit = fadeOut()
+            ) {
+                Box(
+                    modifier = Modifier.padding(
+                        bottom = 96.dp,
+                        end = 16.dp
+                    )
+                ) {
+                    FloatingActionButton(
+                        onClick = {
+                            navigator.navigate(QuickShellScreenDestination)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Terminal,
+                            contentDescription = stringResource(R.string.quick_shell)
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(bottom = 80.dp),
+            contentPadding = PaddingValues(bottom = 160.dp),
             verticalArrangement = Arrangement.spacedBy(tokens.spacingMd)
         ) {
             item {
@@ -215,7 +244,7 @@ fun HomeCircleScreen(
                         isShizukuActive = isShizukuActive,
                         onPowerClick = { showPowerDialog = true },
                         onActivateClick = { navigator.navigate(ActivateScreenDestination) },
-                        bannerImagePath = bannerImagePath,
+                        bannerDrawable = bannerDrawable,
                         tokens = tokens
                     )
                 }
@@ -231,7 +260,9 @@ fun HomeCircleScreen(
                 ) {
                     QuickActionsRow(
                         enabled = isRunning,
-                        onTerminalClick = { navigator.navigate(QuickShellScreenDestination) },
+                        onTogglesClick = {
+                            navigator.navigate(ToggleShortcutsScreenDestination)
+                        },
                         onReigniteClick = {
                             scope.launch {
                                 val success = loadingDialog.withLoading {
@@ -261,20 +292,8 @@ fun HomeCircleScreen(
                             privilegeCount = if (isShizukuActive) privilegeViewModel.privilegedCount else null,
                             isShizukuActive = isShizukuActive,
                             isRunning = isRunning,
-                            onPluginClick = {
-                                navigator.navigate(BottomBarDestination.Plugin.direction) {
-                                    popUpTo(NavGraphs.root) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            onPrivilegeClick = {
-                                navigator.navigate(BottomBarDestination.Privilege.direction) {
-                                    popUpTo(NavGraphs.root) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onPluginClick = { onTabSelected(BottomBarDestination.Plugin) },
+                            onPrivilegeClick = { onTabSelected(BottomBarDestination.Privilege) },
                             tokens = tokens
                         )
                     }
@@ -304,7 +323,7 @@ private fun HeroSection(
     isShizukuActive: Boolean,
     onPowerClick: () -> Unit,
     onActivateClick: () -> Unit,
-    bannerImagePath: String?,
+    bannerDrawable: Drawable?,
     tokens: HomeTokens
 ) {
     val isRunning = status is ActivateViewModel.ActivateStatus.Running
@@ -329,33 +348,28 @@ private fun HeroSection(
         label = "pulseScale"
     )
 
-    var bannerSize by remember { mutableStateOf(IntSize.Zero) }
-    val bannerContext = LocalContext.current
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = tokens.spacingMd)
-            .onSizeChanged { bannerSize = it },
+            .padding(horizontal = tokens.spacingMd),
         contentAlignment = Alignment.Center
     ) {
-        if (bannerImagePath != null && bannerSize.width > 0) {
-            val bannerRequest = remember(bannerImagePath, bannerSize) {
-                val maxDim = 1920
-                ImageRequest.Builder(bannerContext)
-                    .data(File(bannerImagePath))
-                    .size(
-                        minOf(bannerSize.width, maxDim),
-                        minOf(bannerSize.height, maxDim)
-                    )
-                    .build()
-            }
-
+        if (bannerDrawable != null) {
             Box(modifier = Modifier.matchParentSize()) {
-                AsyncImage(
-                    model = bannerRequest,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                AndroidView(
+                    factory = { ctx ->
+                        ImageView(ctx).apply {
+                            scaleType = ImageView.ScaleType.CENTER_CROP
+                        }
+                    },
+                    update = { view ->
+                        view.setImageDrawable(bannerDrawable)
+                        (bannerDrawable as? android.graphics.drawable.Animatable)?.start()
+                    },
+                    onRelease = { view ->
+                        (view.drawable as? android.graphics.drawable.Animatable)?.stop()
+                        view.setImageDrawable(null)
+                    },
                     modifier = Modifier
                         .matchParentSize()
                         .clip(RoundedCornerShape(tokens.heroBannerCornerRadius))
@@ -405,11 +419,10 @@ private fun HeroSection(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_thunderbolt),
+                    Image(
+                        painter = painterResource(R.drawable.ic_axora_logo),
                         contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        modifier = Modifier.size(28.dp)
                     )
                     Spacer(Modifier.width(tokens.spacingSm))
                     Text(
@@ -464,23 +477,22 @@ private fun HeroSection(
                             fontWeight = FontWeight.SemiBold
                         )
                     )
+                    Text(
+                        text = stringResource(R.string.home_meta_version, axeronInfo.getVersionCode()),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = tokens.heroMetaSize
+                        ),
+                        color = Color.White,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(tokens.chipCornerRadius))
+                            .background(Color.Black.copy(alpha = 0.35f))
+                            .padding(horizontal = tokens.spacingSm, vertical = tokens.spacingXs)
+                    )
                 }
 
-                Spacer(Modifier.height(tokens.spacingXs))
+                Spacer(Modifier.height(tokens.spacingSm))
 
-                Text(
-                    text = "v${axeronInfo.getVersionCode()} · PID ${axeronInfo.serverInfo.pid} · ${axeronInfo.serverInfo.getMode().label}",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = tokens.heroMetaSize
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(Modifier.height(4.dp))
-
-                UptimeText(axeronInfo = axeronInfo, tokens = tokens)
+                ServerMetaPill(axeronInfo = axeronInfo, tokens = tokens)
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -539,6 +551,42 @@ private fun HeroSection(
 }
 
 @Composable
+private fun ServerMetaPill(axeronInfo: AxeronInfo, tokens: HomeTokens) {
+    val metaTextStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = tokens.heroMetaSize)
+
+    FlowRow(
+        modifier = Modifier
+            .clip(RoundedCornerShape(tokens.chipCornerRadius))
+            .background(Color.Black.copy(alpha = 0.35f))
+            .padding(horizontal = tokens.spacingSm, vertical = tokens.spacingXs),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacingSm),
+        verticalArrangement = Arrangement.spacedBy(tokens.spacingXs)
+    ) {
+        UptimeText(axeronInfo = axeronInfo, tokens = tokens)
+        Text(
+            text = "|",
+            style = metaTextStyle,
+            color = Color.White.copy(alpha = 0.6f)
+        )
+        Text(
+            text = stringResource(R.string.home_meta_pid, axeronInfo.serverInfo.pid),
+            style = metaTextStyle,
+            color = Color.White
+        )
+        Text(
+            text = "|",
+            style = metaTextStyle,
+            color = Color.White.copy(alpha = 0.6f)
+        )
+        Text(
+            text = stringResource(R.string.home_meta_uid, axeronInfo.serverInfo.uid),
+            style = metaTextStyle,
+            color = Color.White
+        )
+    }
+}
+
+@Composable
 private fun UptimeText(axeronInfo: AxeronInfo, tokens: HomeTokens) {
     var time by remember { mutableLongStateOf(0L) }
 
@@ -554,27 +602,36 @@ private fun UptimeText(axeronInfo: AxeronInfo, tokens: HomeTokens) {
 
     fun formatUptime(millis: Long): String {
         val totalSeconds = millis / 1000
-        val days = totalSeconds / 86400
-        val hours = (totalSeconds % 86400) / 3600
+        val hours = totalSeconds / 3600
         val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
-        val dayPart = if (days > 0) "${days}d " else ""
-        return "T+${dayPart}%02d:%02d:%02d".format(hours, minutes, seconds)
+        return "%02d:%02d:%02d".format(hours, minutes, seconds)
     }
 
-    Text(
-        text = if (starting <= 0L) "" else formatUptime(time),
-        style = MaterialTheme.typography.bodyMedium.copy(
-            fontSize = tokens.heroMetaSize
-        ),
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Timer,
+            contentDescription = null,
+            modifier = Modifier.size(tokens.heroMetaSize.value.dp),
+            tint = Color.White
+        )
+        Text(
+            text = if (starting <= 0L) "--:--:--" else formatUptime(time),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = tokens.heroMetaSize
+            ),
+            color = Color.White
+        )
+    }
 }
 
 @Composable
 private fun QuickActionsRow(
     enabled: Boolean,
-    onTerminalClick: () -> Unit,
+    onTogglesClick: () -> Unit,
     onReigniteClick: () -> Unit,
     tokens: HomeTokens
 ) {
@@ -585,18 +642,18 @@ private fun QuickActionsRow(
         horizontalArrangement = Arrangement.spacedBy(tokens.spacingSm)
     ) {
         ActionChip(
-            icon = Icons.Filled.Terminal,
-            label = stringResource(R.string.quick_shell),
-            enabled = enabled,
-            onClick = onTerminalClick,
-            tokens = tokens,
-            modifier = Modifier.weight(1f)
-        )
-        ActionChip(
             icon = Icons.Default.LocalFireDepartment,
             label = stringResource(R.string.ignite),
             enabled = enabled,
             onClick = onReigniteClick,
+            tokens = tokens,
+            modifier = Modifier.weight(1f)
+        )
+        ActionChip(
+            icon = Icons.Outlined.Tune,
+            label = stringResource(R.string.quick_toggles),
+            enabled = enabled,
+            onClick = onTogglesClick,
             tokens = tokens,
             modifier = Modifier.weight(1f)
         )

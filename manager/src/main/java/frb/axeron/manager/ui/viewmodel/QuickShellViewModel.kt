@@ -2,6 +2,7 @@ package frb.axeron.manager.ui.viewmodel
 
 import android.app.Application
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
@@ -17,8 +18,7 @@ import frb.axeron.api.AxeronCommandSession
 import frb.axeron.api.core.AxeronSettings
 import frb.axeron.api.utils.AnsiFilter
 import frb.axeron.manager.R
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
 class QuickShellViewModel(application: Application) : AndroidViewModel(application) {
@@ -26,7 +26,17 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
     var session: AxeronCommandSession = AxeronCommandSession()
     private var savedCommand: TextFieldValue? = null
 
+    private val _logs = mutableStateListOf<Output>()
+    val logs: List<Output> get() = _logs
+    private val outputEvents = Channel<Output>(Channel.UNLIMITED)
+
     init {
+        viewModelScope.launch {
+            for (line in outputEvents) {
+                processOutput(line)
+            }
+        }
+
         session.setProcessListener(object : AxeronCommandSession.ProcessListener {
             override fun onProcessCreated(pid: Int, command: String) {
                 if (command.lines().size > 1) {
@@ -147,16 +157,10 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    private val _output = MutableSharedFlow<Output>(extraBufferCapacity = 64)
-    val output: SharedFlow<Output> = _output
-
     var isRunning by mutableStateOf(false)
         private set
 
     var commandText by mutableStateOf(TextFieldValue(""))
-        private set
-
-    var clear by mutableStateOf(false)
         private set
 
     var execMode by mutableStateOf("Commands")
@@ -197,9 +201,8 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
         commandText = text
     }
 
-    fun clear() {
-        //make a toggle state
-        clear = !clear
+    fun clearLogs() {
+        _logs.clear()
     }
 
     fun stop() {
@@ -214,13 +217,77 @@ class QuickShellViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private fun append(type: OutputType, output: String) {
-        viewModelScope.launch {
-            _output.emit(Output(type, output))
+        outputEvents.trySend(Output(type, output))
+    }
+
+    private fun processOutput(line: Output) {
+        val raw = line.output
+        if (line.type != OutputType.TYPE_SPACE && raw.isBlank()) return
+
+        if (AnsiFilter.isScreenControl(raw)) {
+            val clean = AnsiFilter.stripAnsi(raw)
+            if (clean.isEmpty()) return
+            if (_logs.isEmpty()) {
+                _logs.add(
+                    Output(
+                        type = line.type,
+                        output = clean,
+                        completed = false
+                    )
+                )
+            } else {
+                val last = _logs.last()
+                _logs[_logs.lastIndex] = last.copy(output = clean)
+            }
+            return
+        }
+
+        if (line.type != OutputType.TYPE_STDOUT && line.type != OutputType.TYPE_STDERR) {
+            _logs.add(line.copy(completed = true))
+            return
+        }
+
+        val hasNewline = raw.contains('\n')
+        val hasCarriageReturn = raw.contains('\r') && !raw.contains('\n')
+        val clean = raw.trimEnd('\n', '\r')
+        val last = _logs.lastOrNull()
+
+        when {
+            hasCarriageReturn && last != null &&
+                !last.completed &&
+                last.type == line.type -> {
+                val index = _logs.lastIndex
+                _logs[index] = last.copy(
+                    output = clean,
+                    completed = false
+                )
+            }
+
+            last != null &&
+                !last.completed &&
+                last.type == line.type -> {
+                val index = _logs.lastIndex
+                _logs[index] = last.copy(
+                    output = last.output + clean,
+                    completed = hasNewline
+                )
+            }
+
+            else -> {
+                _logs.add(
+                    Output(
+                        type = line.type,
+                        output = clean,
+                        completed = hasNewline
+                    )
+                )
+            }
         }
     }
 
     override fun onCleared() {
         super.onCleared()
+        outputEvents.close()
         if (Axeron.pingBinder()) stop()
     }
 }

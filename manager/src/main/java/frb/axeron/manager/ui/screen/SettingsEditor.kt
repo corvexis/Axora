@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -54,6 +55,7 @@ import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -82,6 +84,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ToggleShortcutsScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import frb.axeron.manager.R
 import frb.axeron.manager.data.SettingsRepository
@@ -117,6 +120,11 @@ fun SettingsEditorScreen(
 
     var query by remember { mutableStateOf("") }
     var showFab by remember { mutableStateOf(true) }
+    var toggleSeedType by remember {
+        mutableStateOf<SettingsRepository.SettingType?>(null)
+    }
+    var toggleSeedKey by remember { mutableStateOf("") }
+    var toggleSeedValue by remember { mutableStateOf("") }
     val bottomBarHidden = LocalBottomBarHidden.current
 
     val settingsRepository = remember(contentResolver) {
@@ -183,6 +191,16 @@ fun SettingsEditorScreen(
                 onSearchTextChange = { query = it },
                 onClearClick = { query = "" },
                 action = {
+                    IconButton(
+                        onClick = {
+                            navigator.navigate(ToggleShortcutsScreenDestination)
+                        }
+                    ) {
+                        Icon(
+                            Icons.Outlined.Tune,
+                            stringResource(R.string.toggle_shortcuts)
+                        )
+                    }
                     IconButton(onClick = { refresh(selectedType) }) {
                         Icon(Icons.Outlined.Refresh, null)
                     }
@@ -207,8 +225,15 @@ fun SettingsEditorScreen(
                 enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
                 exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
             ) {
-                FloatingActionButton(onClick = { isAdding = true }) {
-                    Icon(Icons.Filled.Add, null)
+                Box(
+                    modifier = Modifier.padding(
+                        bottom = if (bottomBarHidden.value) 26.dp else 96.dp,
+                        end = 16.dp
+                    )
+                ) {
+                    FloatingActionButton(onClick = { isAdding = true }) {
+                        Icon(Icons.Filled.Add, null)
+                    }
                 }
             }
         }
@@ -228,7 +253,7 @@ fun SettingsEditorScreen(
                         if (selectedType == it) return@launch
                         val target = settingTypes.indexOf(it)
                         if (pagerState.currentPage != target && target >= 0) {
-                            pagerState.animateScrollToPage(target)
+                            pagerState.scrollToPage(target)
                         }
                         showFab = true
                         bottomBarHidden.value = false
@@ -324,16 +349,30 @@ fun SettingsEditorScreen(
                                     key = entry.key,
                                     value = entry.value ?: "",
                                     selectedType = type,
-                                    settingsRepository = settingsRepository
-                                ) {
-                                    refresh(type)
-                                }
+                                    settingsRepository = settingsRepository,
+                                    onRefresh = { refresh(type) },
+                                    onCreateToggle = { key, value ->
+                                        toggleSeedType = type
+                                        toggleSeedKey = key
+                                        toggleSeedValue = value
+                                    }
+                                )
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    toggleSeedType?.let { type ->
+        ToggleConfigSheet(
+            toggleViewModel = viewModelGlobal.toggleViewModel,
+            onDismiss = { toggleSeedType = null },
+            initialType = type,
+            initialKey = toggleSeedKey,
+            initialOffValue = toggleSeedValue
+        )
     }
 }
 
@@ -395,7 +434,8 @@ fun TableItem(
     value: String,
     selectedType: SettingsRepository.SettingType,
     settingsRepository: SettingsRepository,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onCreateToggle: (String, String) -> Unit
 ) {
     var isEditing by remember { mutableStateOf(false) }
 
@@ -409,7 +449,11 @@ fun TableItem(
         onDismissRequest = {
             isEditing = false
         },
-        onRefresh = onRefresh
+        onRefresh = onRefresh,
+        onCreateToggle = { newKey, newValue ->
+            isEditing = false
+            onCreateToggle(newKey, newValue)
+        }
     )
 
     ElevatedCard(
@@ -457,7 +501,8 @@ fun TableEditor(
     selectedType: SettingsRepository.SettingType,
     settingsRepository: SettingsRepository,
     onDismissRequest: () -> Unit,
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
+    onCreateToggle: ((String, String) -> Unit)? = null
 ) {
     var newKey by remember { mutableStateOf(key) }
     var newValue by remember { mutableStateOf(value) }
@@ -727,6 +772,22 @@ fun TableEditor(
                     shape = RoundedCornerShape(12.dp),
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                 )
+
+                val createToggle = onCreateToggle
+                if (!addTable && createToggle != null) {
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(onClick = { createToggle(newKey, newValue) }) {
+                        Icon(
+                            modifier = Modifier.size(18.dp),
+                            imageVector = Icons.Outlined.Tune,
+                            contentDescription = null
+                        )
+                        Text(
+                            modifier = Modifier.padding(start = 7.dp),
+                            text = stringResource(R.string.create_toggle)
+                        )
+                    }
+                }
 
                 Spacer(Modifier.height(20.dp))
             }
