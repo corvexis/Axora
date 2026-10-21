@@ -44,7 +44,7 @@ Axora — Android app (Kotlin + Compose, Material 3) for ADB/non-root device con
 - **Hidden IPC activities**: `RequestPermissionActivity`, `WebUIActivity`, `Toast`, and `ShellRequestHandlerActivity` are declared in `AndroidManifest.xml` but aren't navigation screens. They're Binder/shell IPC entry points. Don't remove or restructure them without understanding their callers.
 
 ## Version Scheme
-- Canonical source: `api/manifest.gradle.kts` — `apiVersionCode = major*10000 + minor*1000 + patch` (e.g. 1.5.100 → 15100).
+- Canonical source: `api/manifest.gradle.kts` — `apiVersionCode` is set explicitly (currently `261021` for `26.10.21`). Do not derive date-style codes from `major*10000 + minor*1000 + patch`.
 - `gradle.properties` **must be manually kept in sync** (`api_version`/`api_version_name`) — the top-level build reads `api_version` from it directly.
 - Version name appends commit count: `{api_version_name}.r{git rev-list --count HEAD}`.
 
